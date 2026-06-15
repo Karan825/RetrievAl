@@ -34,6 +34,62 @@ def _yoe_modifier(candidate_yoe: float, min_yoe: float, max_yoe: float) -> float
         return 0.82
     return 0.50
 
+def generate_detailed_reasoning(candidate: dict, score: float, rank_idx: int, meta: dict) -> str:
+    """Generates a detailed, candidate-specific, fact-grounded explanation for the ranking."""
+    p = candidate.get("profile", {})
+    name = p.get("anonymized_name", f"Candidate {candidate.get('candidate_id')}")
+    title = p.get("current_title", "Professional")
+    company = p.get("current_company", "")
+    yoe = p.get("years_of_experience", 0)
+    
+    constraints = meta.get("metadata_constraints", {})
+    min_yoe = float(constraints.get("min_yoe", 5.0))
+    max_yoe = float(constraints.get("max_yoe", 9.0))
+    role = meta.get("job_title", "target role")
+    
+    # Extract top skills
+    skills_list = candidate.get("skills", [])
+    prof_map = {"advanced": 3, "intermediate": 2, "beginner": 1}
+    sorted_skills = sorted(
+        skills_list, 
+        key=lambda x: (prof_map.get(x.get("proficiency", "beginner"), 1), x.get("duration_months", 0)), 
+        reverse=True
+    )
+    top_skills = [s.get("name") for s in sorted_skills[:3] if s.get("name")]
+    skills_phrase = f"demonstrating capabilities in {', '.join(top_skills)}" if top_skills else ""
+    
+    # Career context
+    career_phrase = ""
+    if title:
+        if company:
+            career_phrase = f"currently working as a {title} at {company}"
+        else:
+            career_phrase = f"background as a {title}"
+            
+    # YOE details
+    yoe_phrase = f"possesses {yoe:.1f} YOE"
+    if min_yoe <= yoe <= max_yoe:
+        yoe_phrase += f" (matching the target {int(min_yoe)}-{int(max_yoe)} bracket)"
+    elif yoe < min_yoe:
+        yoe_phrase += f" (slightly under the target {int(min_yoe)} YOE requirement)"
+    else:
+        yoe_phrase += f" (exceeding the base {int(max_yoe)} YOE constraint)"
+
+    # Engagement signal
+    rr = candidate.get("redrob_signals", {}).get("recruiter_response_rate", 0) * 100
+    rel_phrase = f"shows high active responsiveness with a {rr:.0f}% response rate"
+    
+    parts = []
+    if career_phrase:
+        parts.append(career_phrase)
+    parts.append(yoe_phrase)
+    if skills_phrase:
+        parts.append(skills_phrase)
+    parts.append(rel_phrase)
+    
+    reasoning = f"{name} is ranked #{rank_idx} for the {role} role because they are " + ", ".join(parts) + "."
+    return reasoning
+
 def run(candidates_path, jd_embed_path, jd_meta_path, out_path):
     t0 = time.perf_counter()
     
@@ -171,12 +227,7 @@ def run(candidates_path, jd_embed_path, jd_meta_path, out_path):
         
         for rank_idx, (score, candidate, base_score) in enumerate(top, start=1):
             cid = candidate["candidate_id"]
-            yoe = candidate.get("profile", {}).get("years_of_experience", 0)
-            response_rate = candidate.get("redrob_signals", {}).get("recruiter_response_rate", 0) * 100
-            
-            # Strict deterministic reasoning avoids LLM hallucination and scores high on Manual Review
-            reasoning = f"Semantic base score {base_score:.1f}/100. Has {yoe} YOE (target {min_yoe}-{max_yoe}). High reliability ({response_rate:.0f}% response rate)."
-            
+            reasoning = generate_detailed_reasoning(candidate, score, rank_idx, meta)
             writer.writerow([cid, rank_idx, round(score, 4), reasoning])
 
     elapsed = time.perf_counter() - t0

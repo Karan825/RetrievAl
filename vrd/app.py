@@ -207,14 +207,12 @@ def score_candidates(candidates_data, v_core, v_neg, meta, embedder, progress_in
 
     scored.sort(key=lambda x: (-x[0], x[1]["candidate_id"]))
     
+    from main_ranker import generate_detailed_reasoning
     results = []
     for rank_idx, (score, candidate, base_score) in enumerate(scored[:100], start=1):
         cid = candidate["candidate_id"]
-        yoe = candidate.get("profile", {}).get("years_of_experience", 0)
-        rr = candidate.get("redrob_signals", {}).get("recruiter_response_rate", 0) * 100
-        
         rounded_score = round(float(score), 4)
-        reasoning = f"Semantic match score {base_score:.1f}/100. Has {yoe} YOE (Target: {min_yoe:.0f}-{max_yoe:.0f}). Expected response rate: {rr:.0f}%."
+        reasoning = generate_detailed_reasoning(candidate, score, rank_idx, meta)
         results.append({
             "candidate_id": cid,
             "rank": rank_idx, 
