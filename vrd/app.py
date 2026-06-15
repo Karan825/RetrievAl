@@ -629,7 +629,17 @@ if run_btn:
     
     if results:
         df = pd.DataFrame(results)
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(
+            df, 
+            use_container_width=True, 
+            hide_index=True,
+            column_config={
+                "candidate_id": st.column_config.TextColumn("Candidate ID", width="medium"),
+                "rank": st.column_config.NumberColumn("Rank", width="small"),
+                "score": st.column_config.NumberColumn("Score", width="small"),
+                "reasoning": st.column_config.TextColumn("Reasoning Brief", width="max")
+            }
+        )
         
         csv = df.to_csv(index=False).encode('utf-8')
         
