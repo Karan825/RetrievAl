@@ -1,0 +1,27 @@
+# Data files — too large for git
+candidates.jsonl
+sample_candidates.json
+
+# Output
+submission.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Scratch / dev tools
+generate_notebook.py
+check_notebook.py
+scratch/
+
+# OS
+.DS_Store
+Thumbs.db

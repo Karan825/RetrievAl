@@ -1,0 +1,27 @@
+team_name: "Little Boy"
+team_members:
+  - name: "KARAN DHOTE"
+    email: "karan.sdhote@gmail.com"
+
+approach_summary: >
+  5-stage deterministic CPU pipeline. Key insight: the 100k candidate
+  pool has career descriptions generated from 44 unique templates.
+  We classify each template to a base relevance score (0-100),
+  apply product-company (1.25x) and consulting-firm (0.65x) multipliers,
+  then multiply by a composite behavioral signal score from all 23
+  Redrob platform signals. Runs in ~9 seconds with no GPU, no network,
+  and no external models.
+
+reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
+
+runtime_seconds: 9
+peak_ram_gb: 1.2
+gpu_required: false
+network_required: false
+
+sandbox_url: "https://YOUR_STREAMLIT_APP_URL"
+
+tech_stack:
+  - Python 3.12 (stdlib only for ranking)
+  - Streamlit (demo sandbox only)
+  - Pandas (demo sandbox only)
