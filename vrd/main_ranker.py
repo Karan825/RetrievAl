@@ -67,7 +67,7 @@ def generate_detailed_reasoning(candidate: dict, score: float, rank_idx: int, me
             career_phrase = f"background as a {title}"
             
     # YOE details
-    yoe_phrase = f"possesses {yoe:.1f} YOE"
+    yoe_phrase = f"possessing {yoe:.1f} YOE"
     if min_yoe <= yoe <= max_yoe:
         yoe_phrase += f" (matching the target {int(min_yoe)}-{int(max_yoe)} bracket)"
     elif yoe < min_yoe:
@@ -77,7 +77,7 @@ def generate_detailed_reasoning(candidate: dict, score: float, rank_idx: int, me
 
     # Engagement signal
     rr = candidate.get("redrob_signals", {}).get("recruiter_response_rate", 0) * 100
-    rel_phrase = f"shows high active responsiveness with a {rr:.0f}% response rate"
+    rel_phrase = f"showing high active responsiveness with a {rr:.0f}% response rate"
     
     parts = []
     if career_phrase:
@@ -87,7 +87,10 @@ def generate_detailed_reasoning(candidate: dict, score: float, rank_idx: int, me
         parts.append(skills_phrase)
     parts.append(rel_phrase)
     
-    reasoning = f"{name} is ranked #{rank_idx} for the {role} role because they are " + ", ".join(parts) + "."
+    if len(parts) > 1:
+        reasoning = f"{name} is ranked #{rank_idx} for the {role} role because they are " + ", ".join(parts[:-1]) + ", and " + parts[-1] + "."
+    else:
+        reasoning = f"{name} is ranked #{rank_idx} for the {role} role because they are " + parts[0] + "."
     return reasoning
 
 def run(candidates_path, jd_embed_path, jd_meta_path, out_path):
