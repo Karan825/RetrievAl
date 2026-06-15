@@ -641,7 +641,7 @@ if run_btn:
                 "candidate_id": st.column_config.TextColumn("Candidate ID", width="medium"),
                 "rank": st.column_config.NumberColumn("Rank", width="small"),
                 "score": st.column_config.NumberColumn("Score", width="small"),
-                "reasoning": st.column_config.TextColumn("Reasoning Brief", width="max")
+                "reasoning": st.column_config.TextColumn("Reasoning Brief", width=1500)
             }
         )
         
