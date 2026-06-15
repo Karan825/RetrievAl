@@ -48,15 +48,16 @@ except Exception as e:
 # Custom CSS for modern typography, animations, and container refinements
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
-    /* Font Family overrides */
     html, body, [data-testid="stAppViewContainer"], .stApp {
-        font-family: 'Outfit', sans-serif !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        background-color: #080A10 !important;
+        color: #F8FAFC !important;
     }
     
     h1, h2, h3, h4, h5, h6 {
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        font-family: 'Space Grotesk', sans-serif !important;
         font-weight: 700 !important;
         letter-spacing: -0.02em;
     }
@@ -68,38 +69,44 @@ st.markdown("""
         100% { transform: scale(0.98); opacity: 0.7; }
     }
     
-    /* Native bordered container styling */
+    /* Native bordered container styling with left accent border and glow */
     div[data-testid="stVerticalBlockBorderWrapper"] {
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 12px !important;
-        background-color: rgba(19, 25, 38, 0.45) !important;
-        backdrop-filter: blur(8px) !important;
-        transition: all 0.3s ease;
+        border: 1px solid rgba(99, 102, 241, 0.08) !important;
+        border-left: 4px solid #6366F1 !important;
+        border-radius: 16px !important;
+        background: linear-gradient(135deg, rgba(17, 24, 39, 0.6) 0%, rgba(11, 15, 26, 0.8) 100%) !important;
+        backdrop-filter: blur(12px) !important;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2) !important;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        padding: 24px !important;
     }
     
     div[data-testid="stVerticalBlockBorderWrapper"]:hover {
-        border-color: rgba(99, 102, 241, 0.3) !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+        border-color: rgba(99, 102, 241, 0.25) !important;
+        border-left-color: #818CF8 !important;
+        box-shadow: 0 10px 40px rgba(99, 102, 241, 0.08), 0 4px 30px rgba(0, 0, 0, 0.3) !important;
+        transform: translateY(-2px);
     }
 
-    /* Custom high-contrast buttons */
+    /* Custom high-contrast action buttons with premium SaaS glow */
     .stButton > button {
-        background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%) !important;
+        background: linear-gradient(135deg, #6366F1 0%, #a855f7 100%) !important;
         color: #ffffff !important;
         border: none !important;
-        border-radius: 8px !important;
-        padding: 10px 20px !important;
-        font-weight: 600 !important;
-        font-size: 15px !important;
-        letter-spacing: 0.01em;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25) !important;
+        border-radius: 12px !important;
+        padding: 12px 28px !important;
+        font-weight: 700 !important;
+        font-size: 16px !important;
+        font-family: 'Space Grotesk', sans-serif !important;
+        letter-spacing: 0.02em;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35) !important;
     }
     
     .stButton > button:hover {
         background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%) !important;
-        transform: translateY(-1px) !important;
-        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 30px rgba(99, 102, 241, 0.5) !important;
     }
     
     .stButton > button:active {
@@ -115,14 +122,103 @@ st.markdown("""
 
     /* File uploader container styling */
     div[data-testid="stFileUploader"] {
-        background-color: rgba(15, 23, 42, 0.3) !important;
-        border: 1px dashed rgba(255, 255, 255, 0.15) !important;
-        border-radius: 8px !important;
-        padding: 12px !important;
+        background-color: rgba(17, 24, 39, 0.45) !important;
+        border: 1px dashed rgba(99, 102, 241, 0.2) !important;
+        border-radius: 12px !important;
+        padding: 18px !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    div[data-testid="stFileUploader"]:hover {
+        border-color: rgba(99, 102, 241, 0.5) !important;
+        background-color: rgba(17, 24, 39, 0.6) !important;
     }
     
     div[data-testid="stFileUploader"] section {
         background-color: transparent !important;
+    }
+
+    /* Dashboard metrics style overrides */
+    .dashboard-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+    }
+
+    .custom-metric-card {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 16px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+    .custom-metric-card:hover {
+        border-color: rgba(99, 102, 241, 0.25);
+        box-shadow: 0 8px 30px rgba(99, 102, 241, 0.05);
+        transform: translateY(-2px);
+    }
+
+    .metric-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        margin-right: 16px;
+        background: rgba(99, 102, 241, 0.1);
+        color: #818CF8;
+        border: 1px solid rgba(99, 102, 241, 0.15);
+    }
+
+    .metric-icon-wrapper.danger {
+        background: rgba(239, 68, 68, 0.1);
+        color: #F87171;
+        border-color: rgba(239, 68, 68, 0.15);
+    }
+
+    .metric-icon-wrapper.success {
+        background: rgba(16, 185, 129, 0.1);
+        color: #34D399;
+        border-color: rgba(16, 185, 129, 0.15);
+    }
+
+    .metric-content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .metric-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #94A3B8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .metric-value {
+        font-size: 24px;
+        font-weight: 700;
+        margin-top: 4px;
+        color: #F8FAFC;
+    }
+
+    .metric-value.primary {
+        color: #818CF8;
+    }
+
+    .metric-value.danger {
+        color: #F87171;
+    }
+
+    .metric-value.success {
+        color: #34D399;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -235,45 +331,45 @@ steps = [
 
 def get_pipeline_html(current_step_idx, step_status):
     html_lines = []
-    html_lines.append('<div style="background: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 20px; margin-bottom: 20px;">')
-    html_lines.append('<h4 style="margin: 0 0 15px 0; color: #F8FAFC; font-size: 15px; font-weight: 600;">Pipeline Execution Progress</h4>')
+    html_lines.append('<div style="background: rgba(11, 15, 26, 0.6); border: 1px solid rgba(99, 102, 241, 0.12); border-radius: 16px; padding: 24px; margin-bottom: 25px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">')
+    html_lines.append('<h4 style="margin: 0 0 20px 0; color: #F8FAFC; font-size: 16px; font-weight: 700; font-family: \'Space Grotesk\', sans-serif; letter-spacing: -0.01em;">Pipeline Execution Progress</h4>')
     
     for idx, (title, desc) in enumerate(steps):
         if idx < current_step_idx:
-            status_class = "status-success"
-            icon = "✅"
-            icon_style = "background: rgba(16, 185, 129, 0.15); color: #10B981;"
-            badge = '<span style="color: #34D399; font-size: 10px; font-weight: 600; background: rgba(52, 211, 153, 0.1); padding: 2px 6px; border-radius: 4px; float: right;">Done</span>'
+            icon = "✓"
+            icon_style = "background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.25);"
+            card_style = "border: 1px solid rgba(16, 185, 129, 0.12); background: rgba(16, 185, 129, 0.02);"
+            badge = '<span style="color: #34D399; font-size: 10px; font-weight: 700; background: rgba(52, 211, 153, 0.12); padding: 3px 8px; border-radius: 6px;">DONE</span>'
         elif idx == current_step_idx:
             if step_status == "running":
-                status_class = "status-running"
-                icon = "⚙️"
-                icon_style = "background: rgba(99, 102, 241, 0.2); color: #818cf8; animation: pulse 1.5s infinite;"
-                badge = '<span style="color: #818CF8; font-size: 10px; font-weight: 600; background: rgba(129, 140, 248, 0.1); padding: 2px 6px; border-radius: 4px; float: right; animation: pulse 1.5s infinite;">Active</span>'
+                icon = "⚡"
+                icon_style = "background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); animation: pulse 1.5s infinite;"
+                card_style = "border: 1px solid rgba(168, 85, 247, 0.3); background: rgba(168, 85, 247, 0.05); box-shadow: 0 0 15px rgba(168, 85, 247, 0.05);"
+                badge = '<span style="color: #C084FC; font-size: 10px; font-weight: 700; background: rgba(168, 85, 247, 0.15); padding: 3px 8px; border-radius: 6px; animation: pulse 1.5s infinite;">PROCESSING</span>'
             elif step_status == "success":
-                status_class = "status-success"
-                icon = "✅"
-                icon_style = "background: rgba(16, 185, 129, 0.15); color: #10B981;"
-                badge = '<span style="color: #34D399; font-size: 10px; font-weight: 600; background: rgba(52, 211, 153, 0.1); padding: 2px 6px; border-radius: 4px; float: right;">Done</span>'
+                icon = "✓"
+                icon_style = "background: rgba(16, 185, 129, 0.15); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.25);"
+                card_style = "border: 1px solid rgba(16, 185, 129, 0.12); background: rgba(16, 185, 129, 0.02);"
+                badge = '<span style="color: #34D399; font-size: 10px; font-weight: 700; background: rgba(52, 211, 153, 0.12); padding: 3px 8px; border-radius: 6px;">DONE</span>'
             else:
-                status_class = "status-pending"
-                icon = "⚪"
-                icon_style = "background: rgba(255,255,255,0.03); color: #64748B;"
-                badge = '<span style="color: #64748B; font-size: 10px; font-weight: 600; background: rgba(100, 116, 139, 0.1); padding: 2px 6px; border-radius: 4px; float: right;">Pending</span>'
+                icon = "—"
+                icon_style = "background: rgba(255,255,255,0.03); color: #475569; border: 1px solid rgba(255,255,255,0.06);"
+                card_style = "border: 1px solid rgba(255, 255, 255, 0.03); background: rgba(255, 255, 255, 0.01);"
+                badge = '<span style="color: #64748B; font-size: 10px; font-weight: 700; background: rgba(100, 116, 139, 0.08); padding: 3px 8px; border-radius: 6px;">PENDING</span>'
         else:
-            status_class = "status-pending"
-            icon = "⚪"
-            icon_style = "background: rgba(255,255,255,0.03); color: #64748B;"
-            badge = '<span style="color: #64748B; font-size: 10px; font-weight: 600; background: rgba(100, 116, 139, 0.1); padding: 2px 6px; border-radius: 4px; float: right;">Pending</span>'
+            icon = "—"
+            icon_style = "background: rgba(255,255,255,0.03); color: #475569; border: 1px solid rgba(255,255,255,0.06);"
+            card_style = "border: 1px solid rgba(255, 255, 255, 0.03); background: rgba(255, 255, 255, 0.01);"
+            badge = '<span style="color: #64748B; font-size: 10px; font-weight: 700; background: rgba(100, 116, 139, 0.08); padding: 3px 8px; border-radius: 6px;">PENDING</span>'
             
-        html_lines.append(f'<div style="display: flex; align-items: center; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid rgba(255, 255, 255, 0.05); background: rgba(15, 23, 42, 0.25);">')
-        html_lines.append(f'<div style="margin-right: 12px; font-size: 14px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 50%; {icon_style}">{icon}</div>')
+        html_lines.append(f'<div style="display: flex; align-items: center; padding: 14px 18px; border-radius: 12px; margin-bottom: 12px; transition: all 0.3s ease; {card_style}">')
+        html_lines.append(f'<div style="margin-right: 16px; font-size: 13px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; {icon_style}">{icon}</div>')
         html_lines.append(f'<div style="flex-grow: 1;">')
         html_lines.append(f'<div style="display: flex; justify-content: space-between; align-items: center;">')
-        html_lines.append(f'<span style="font-weight: 500; color: #F1F5F9; font-size: 13px;">{title}</span>')
+        html_lines.append(f'<span style="font-weight: 600; color: #F1F5F9; font-size: 14px; font-family: \'Plus Jakarta Sans\', sans-serif;">{title}</span>')
         html_lines.append(f'{badge}')
         html_lines.append(f'</div>')
-        html_lines.append(f'<div style="font-size: 11px; color: #94A3B8; margin-top: 2px;">{desc}</div>')
+        html_lines.append(f'<div style="font-size: 12px; color: #94A3B8; margin-top: 3px; font-family: \'Plus Jakarta Sans\', sans-serif;">{desc}</div>')
         html_lines.append(f'</div>')
         html_lines.append(f'</div>')
     html_lines.append('</div>')
@@ -502,17 +598,32 @@ if run_btn:
     st.markdown("<h3 style='margin-top: 25px; color:#F8FAFC;'>🏆 Ranked Candidate Results</h3>", unsafe_allow_html=True)
     
     # Quick Stats Row
-    metric_col1, metric_col2, metric_col3 = st.columns(3)
-    with metric_col1:
-        with st.container(border=True):
-            st.markdown(f"<div style='text-align: center;'><span style='color: #94A3B8; font-size: 12px;'>Ingested</span><br><h3 style='margin: 5px 0 0 0; font-size: 22px; color: #818CF8;'>{len(candidates_data):,}</h3></div>", unsafe_allow_html=True)
-    with metric_col2:
-        with st.container(border=True):
-            st.markdown(f"<div style='text-align: center;'><span style='color: #94A3B8; font-size: 12px;'>Honeypots Blocked</span><br><h3 style='margin: 5px 0 0 0; font-size: 22px; color: #EF4444;'>{dropped_hps}</h3></div>", unsafe_allow_html=True)
-    with metric_col3:
-        best_score = results[0]["score"] if results else 0.0
-        with st.container(border=True):
-            st.markdown(f"<div style='text-align: center;'><span style='color: #94A3B8; font-size: 12px;'>Top Match Score</span><br><h3 style='margin: 5px 0 0 0; font-size: 22px; color: #10B981;'>{best_score:.1f}</h3></div>", unsafe_allow_html=True)
+    best_score = results[0]["score"] if results else 0.0
+    st.markdown(f"""
+    <div class="dashboard-metrics">
+        <div class="custom-metric-card">
+            <div class="metric-icon-wrapper">👥</div>
+            <div class="metric-content">
+                <span class="metric-label">Total Ingested</span>
+                <span class="metric-value primary">{len(candidates_data):,}</span>
+            </div>
+        </div>
+        <div class="custom-metric-card">
+            <div class="metric-icon-wrapper danger">🛡️</div>
+            <div class="metric-content">
+                <span class="metric-label">Honeypots Blocked</span>
+                <span class="metric-value danger">{dropped_hps}</span>
+            </div>
+        </div>
+        <div class="custom-metric-card">
+            <div class="metric-icon-wrapper success">🏆</div>
+            <div class="metric-content">
+                <span class="metric-label">Top Match Score</span>
+                <span class="metric-value success">{best_score:.1f}</span>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
     
