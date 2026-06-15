@@ -4,20 +4,35 @@ from llama_cpp import Llama
 from sentence_transformers import SentenceTransformer
 from docx import Document
 import numpy as np
+import sys
+import os
+
+# Resolve paths relative to this script directory
+VRD_DIR = Path(__file__).resolve().parent
 
 # ==========================================
 # 1. INITIALIZE MODELS
 # ==========================================
 def load_model():
+    # Automatically download models if they don't exist
+    try:
+        sys.path.append(str(VRD_DIR))
+        from download_model import ensure_models_exist
+        ensure_models_exist()
+    except Exception as e:
+        print(f"Warning: Could not check/download models: {e}")
+
     print("Loading SLM (Qwen2.5 1.5B)...")
+    model_path = VRD_DIR / "qwen2.5-1.5b-instruct-q4_k_m.gguf"
     llm = Llama(
-        model_path="./qwen2.5-1.5b-instruct-q4_k_m.gguf",
+        model_path=str(model_path),
         n_ctx=8192,
         n_threads=4,
         verbose=False
     )
     print("Loading Embedding Model (bge-small)...")
-    embedder = SentenceTransformer("./local_bge_model")
+    embedder_path = VRD_DIR / "local_bge_model"
+    embedder = SentenceTransformer(str(embedder_path))
     return llm, embedder
 
 

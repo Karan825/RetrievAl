@@ -22,6 +22,29 @@ st.set_page_config(
     layout="wide"
 )
 
+# Automatically download models if missing
+try:
+    import sys
+    sys.path.append(VRD_DIR)
+    from download_model import ensure_models_exist
+    
+    bge_dir = os.path.join(VRD_DIR, "local_bge_model")
+    qwen_path = os.path.join(VRD_DIR, "qwen2.5-1.5b-instruct-q4_k_m.gguf")
+    bge_missing = not os.path.exists(bge_dir) or not os.path.exists(os.path.join(bge_dir, "config.json"))
+    qwen_missing = not os.path.exists(qwen_path) or os.path.getsize(qwen_path) < 100 * 1024 * 1024
+    
+    if bge_missing or qwen_missing:
+        status_info = st.empty()
+        def show_status(msg):
+            status_info.info(f"⏳ {msg}")
+        
+        ensure_models_exist(progress_callback=show_status)
+        status_info.success("🎉 Models successfully prepared and ready!")
+        time.sleep(2)
+        status_info.empty()
+except Exception as e:
+    st.error(f"Failed to automatically check/download models: {e}")
+
 # Custom CSS for modern typography, animations, and container refinements
 st.markdown("""
 <style>
