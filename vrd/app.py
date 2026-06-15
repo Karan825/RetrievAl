@@ -633,17 +633,61 @@ if run_btn:
     
     if results:
         df = pd.DataFrame(results)
-        st.dataframe(
-            df, 
-            use_container_width=True, 
-            hide_index=True,
-            column_config={
+        
+        # Check if installed Streamlit version supports on_select (Streamlit 1.35.0+)
+        try:
+            parts = [int(p) for p in st.__version__.split(".")]
+            supports_selection = (parts[0] > 1) or (parts[0] == 1 and parts[1] >= 35)
+        except Exception:
+            supports_selection = False
+
+        df_kwargs = {
+            "use_container_width": True,
+            "hide_index": True,
+            "column_config": {
                 "candidate_id": st.column_config.TextColumn("Candidate ID", width="medium"),
                 "rank": st.column_config.NumberColumn("Rank", width="small"),
                 "score": st.column_config.NumberColumn("Score", width="small"),
-                "reasoning": st.column_config.TextColumn("Reasoning Brief", width=1500)
+                "reasoning": st.column_config.TextColumn("Reasoning Brief", width=2500)
             }
-        )
+        }
+        
+        if supports_selection:
+            df_kwargs["on_select"] = "rerun"
+            df_kwargs["selection_mode"] = "single-row"
+            st.markdown("<div style='font-size: 13px; color: #94A3B8; margin-bottom: 10px;'>💡 <b>Tip:</b> Click on any candidate row in the table below to view their complete, non-truncated detailed explanatory brief.</div>", unsafe_allow_html=True)
+            
+        event = st.dataframe(df, **df_kwargs)
+        
+        if supports_selection and event is not None and getattr(event, "selection", None):
+            rows = event.selection.get("rows", [])
+            if rows:
+                selected_row_idx = rows[0]
+                selected_cand = df.iloc[selected_row_idx]
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(168, 85, 247, 0.08) 100%); 
+                            border: 1px solid rgba(99, 102, 241, 0.3); 
+                            border-radius: 12px; 
+                            padding: 24px; 
+                            margin-top: 20px;
+                            margin-bottom: 20px;
+                            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
+                        <span style="font-size: 18px; font-weight: 700; color: #F1F5F9; font-family: 'Space Grotesk', sans-serif;">
+                            🔍 Detailed Explanatory Brief — {selected_cand['candidate_id']}
+                        </span>
+                        <span style="font-size: 13px; font-weight: 600; background: rgba(52, 211, 153, 0.15); color: #34D399; padding: 4px 10px; border-radius: 20px;">
+                            Rank #{selected_cand['rank']}
+                        </span>
+                    </div>
+                    <p style="font-size: 15px; line-height: 1.6; color: #F1F5F9; margin: 0; font-family: 'Plus Jakarta Sans', sans-serif;">
+                        {selected_cand['reasoning']}
+                    </p>
+                    <div style="margin-top: 15px; font-size: 13px; color: #94A3B8; font-family: 'Plus Jakarta Sans', sans-serif;">
+                        <b>Algorithm Score:</b> <span style="color: #c084fc; font-weight: 700;">{selected_cand['score']:.4f}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
         
         csv = df.to_csv(index=False).encode('utf-8')
         
