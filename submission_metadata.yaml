@@ -19,7 +19,7 @@ peak_ram_gb: 1.2
 gpu_required: false
 network_required: false
 
-sandbox_url: "https://YOUR_STREAMLIT_APP_URL"
+sandbox_url: "https://share.streamlit.io/karan825/retrieval/main/vrd/app.py"
 
 tech_stack:
   - Python 3.12 (stdlib only for ranking)
