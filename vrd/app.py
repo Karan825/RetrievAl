@@ -504,7 +504,7 @@ if run_btn:
         st.download_button(
             label="📥 Download submission.csv",
             data=csv,
-            file_name='submission.csv',
+            file_name='team_LittleBoy.csv',
             mime='text/csv',
             use_container_width=True
         )
