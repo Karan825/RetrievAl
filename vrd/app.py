@@ -1,3 +1,7 @@
+import logging
+# Suppress noisy streamlit watcher warnings from scanning large packages like transformers
+logging.getLogger("streamlit.watcher.local_sources_watcher").setLevel(logging.ERROR)
+
 import streamlit as st
 import json
 import numpy as np
