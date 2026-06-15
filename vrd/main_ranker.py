@@ -61,8 +61,20 @@ def run(candidates_path, jd_embed_path, jd_meta_path, out_path):
     min_yoe = float(constraints.get("min_yoe", 6.0))
     max_yoe = float(constraints.get("max_yoe", 8.0))
 
+    # Resolve local model path relative to script folder
+    vrd_dir = Path(__file__).resolve().parent
+    model_path = vrd_dir / "local_bge_model"
+
+    # Automatically check/download if missing (e.g. on new clone)
+    try:
+        sys.path.append(str(vrd_dir))
+        from download_model import ensure_models_exist
+        ensure_models_exist()
+    except Exception as e:
+        print(f"Warning: Could not check/download BGE model: {e}")
+
     print("[main_ranker] Loading Local Embedding Model (BGE)...")
-    embedder = SentenceTransformer("./local_bge_model")
+    embedder = SentenceTransformer(str(model_path))
 
     # ---------------------------------------------------------
     # The LRU Cache Trick
@@ -84,7 +96,7 @@ def run(candidates_path, jd_embed_path, jd_meta_path, out_path):
     total = 0
     excluded_hp = 0
 
-    with open(candidates_path, "r", encoding="utf-8") as fh:
+    with open(candidates_path, "r", encoding="utf-8-sig") as fh:
         for line in fh:
             line = line.strip()
             if not line: continue
