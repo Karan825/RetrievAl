@@ -1,0 +1,5 @@
+streamlit>=1.30.0
+sentence-transformers>=2.5.0
+numpy
+llama-cpp-python
+python-docx

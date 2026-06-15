@@ -25,3 +25,5 @@ scratch/
 # OS
 .DS_Store
 Thumbs.db
+vrd/local_bge_model/
+vrd/qwen2.5-1.5b-instruct-q4_k_m.gguf

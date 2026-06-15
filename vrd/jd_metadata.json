@@ -1,0 +1,44 @@
+{
+  "job_title": "Senior AI Engineer",
+  "must_have_hard_skills": [
+    "Production experience with embeddings-based retrieval systems (sentence-transformers, OpenAI embeddings, BGE, E5, or similar) deployed to real users",
+    "Production experience with vector databases or hybrid search infrastructure \u2014 Pinecone, Weaviate, Qdrant, Milvus, OpenSearch, Elasticsearch, FAISS, or something similar",
+    "Strong Python",
+    "Hands-on experience designing evaluation frameworks for ranking systems \u2014 NDCG, MRR, MAP, offline-to-online correlation, A/B test interpretation"
+  ],
+  "execution_and_impact_signals": [
+    "Audit what we currently have (it's mostly BM25 + rule-based scoring, working but not great)",
+    "Ship a v2 ranking system that demonstrably improves recruiter-engagement metrics",
+    "Set up the evaluation infrastructure \u2014 offline benchmarks, online A/B testing, recruiter-feedback loops",
+    "Drive the long-term architecture of how we do candidate-JD matching at scale",
+    "Mentor the next round of hires",
+    "Work closely with our recruiter-experience PM on what to build"
+  ],
+  "culture_and_behavior": [
+    "Scrappy product-engineering attitude",
+    "Deep technical depth in modern ML systems",
+    "Comfortable with two contradictory things",
+    "Tilt slightly toward shipper"
+  ],
+  "abstract_disqualifiers": [
+    "Pure research environments without production deployment",
+    "Primary expertise in computer vision, speech, or robotics without significant NLP/IR exposure",
+    "Worked at consulting firms for 5+ years without product-company experience",
+    "Primary expertise in closed-source proprietary systems without external validation"
+  ],
+  "negative_tools_or_patterns": [
+    "Framework enthusiasts",
+    "Title-chasers",
+    "People who have only worked at consulting firms",
+    "People whose primary expertise is computer vision, speech, or robotics without significant NLP/IR exposure"
+  ],
+  "metadata_constraints": {
+    "min_yoe": 5,
+    "max_yoe": 9,
+    "preferred_company_type": "product companies",
+    "preferred_locations": [
+      "Noida",
+      "Pune"
+    ]
+  }
+}
