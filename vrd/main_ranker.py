@@ -840,7 +840,16 @@ def run(candidates_path, jd_embed_path, jd_meta_path, out_path):
     max_base_seen = 0.0
 
     with open(candidates_path, "r", encoding="utf-8-sig") as fh:
-        for line in fh:
+        # We don't know exact line count in advance without an extra pass, 
+        # so we'll just track progress dynamically, or use a known estimate if possible.
+        # But we can just use an tqdm with no total to show speed.
+        try:
+            from tqdm import tqdm
+            iterator = tqdm(fh, desc="Scoring Candidates")
+        except ImportError:
+            iterator = fh
+
+        for line in iterator:
             line = line.strip()
             if not line:
                 continue
