@@ -46,7 +46,7 @@ except ImportError:
     LLAMA_AVAILABLE = False
 
 TOP_N = 100
-LLM_REASONING_TOP_N = 30   # Use Qwen for top-N reasoning; template for the rest
+LLM_REASONING_TOP_N = 10   # Use Qwen for top-N reasoning; template for the rest
 
 # ─────────────────────────────────────────────────────────────────────────────
 # JD HARD-REQUIREMENT CATEGORIES
