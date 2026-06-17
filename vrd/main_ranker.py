@@ -624,6 +624,7 @@ def run(candidates_path, jd_embed_path, jd_meta_path, out_path):
     # 'bge-base' takes ~14.5 minutes on CPU to embed 17k strings.
     # 'bge-small' is ~3x faster, bringing the total time well under the 5-min constraint
     # while preserving the exact same semantic capabilities.
+    vrd_dir    = Path(__file__).resolve().parent
     model_name = "BAAI/bge-small-en-v1.5"
     model_path = vrd_dir / "local_bge_model"
 
