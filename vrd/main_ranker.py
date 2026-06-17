@@ -1055,9 +1055,11 @@ def run(candidates_path, jd_embed_path, jd_meta_path, out_path):
 
 
 if __name__ == "__main__":
+    repo_root = Path(__file__).resolve().parent.parent
+    vrd_dir = Path(__file__).resolve().parent
     run(
-        candidates_path="../candidates.jsonl",
-        jd_embed_path="./jd_embeddings.npz",
-        jd_meta_path="./jd_metadata.json",
-        out_path="./submission.csv",
+        candidates_path=str(repo_root / "candidates.jsonl"),
+        jd_embed_path=str(vrd_dir / "jd_embeddings.npz"),
+        jd_meta_path=str(vrd_dir / "jd_metadata.json"),
+        out_path=str(vrd_dir / "submission.csv"),
     )
