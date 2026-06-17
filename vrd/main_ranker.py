@@ -635,7 +635,7 @@ def run(candidates_path, jd_embed_path, jd_meta_path, out_path):
 
     # ── Cached embedding functions (closures capture v_core, v_neg, v_skills) ─
 
-    @functools.lru_cache(maxsize=10000)
+    @functools.lru_cache(maxsize=None)
     def cached_embed_and_score(text: str):
         """
         Returns (final_score, sim_pos, sim_neg).
@@ -657,13 +657,13 @@ def run(candidates_path, jd_embed_path, jd_meta_path, out_path):
         score = sim_pos - (beta * sim_neg)
         return score, sim_pos, sim_neg
 
-    @functools.lru_cache(maxsize=5000)
+    @functools.lru_cache(maxsize=None)
     def cached_skill_score(skill_name: str) -> float:
         """Cosine similarity of a skill name to the JD skills vector."""
         v = embedder.encode(skill_name, normalize_embeddings=True)
         return float(np.dot(v, v_skills))
 
-    @functools.lru_cache(maxsize=10000)
+    @functools.lru_cache(maxsize=None)
     def get_cached_embedding(text: str):
         return embedder.encode(text, normalize_embeddings=True)
 
