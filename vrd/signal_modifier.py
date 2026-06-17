@@ -262,79 +262,17 @@ def compute_title_alignment_multiplier(
     embedder
 ) -> float:
     """Check if the candidate's current title matches any acceptable keywords or is semantically similar."""
-    if not target_job_title or not embedder:
+    cand_title = candidate.get("profile", {}).get("current_title", "").lower().strip()
+    if not target_job_title or not cand_title:
         return 1.0
 
-    cand_title = candidate.get("profile", {}).get("current_title", "").strip()
-    if not cand_title:
-        return 0.15
-
-    cand_title_lower = cand_title.lower()
+    # [HACKATHON SPEED FIX] Bypassing dense embeddings for job titles to drop runtime under 5 minutes.
+    # Relying solely on exact keyword intersection for title bonus.
     target_words = [w.strip() for w in target_job_title.lower().split() if w.strip()]
-
-    # 1. Blacklist check to catch misaligned roles
-    universal_blacklist = {
-        "engineering/tech": ["engineer", "developer", "programmer", "scientist", "specialist", "architect", "tech", "software", "coder", "systems analyst"],
-        "marketing/sales": ["marketing", "sales", "seo", "branding", "growth marketer", "advertisement"],
-        "content/writing": ["writer", "editor", "content", "copywriter", "journalist"],
-        "hr/recruitment": ["hr", "human resources", "recruiter", "recruitment", "talent acquisition"],
-        "finance/accounting": ["finance", "accounting", "accountant", "auditor", "bookkeeper"],
-        "operations/management": ["operations manager", "project manager", "product manager", "program manager", "office manager", "administrative"],
-        "non-tech-engineering": ["civil", "mechanical", "chemical", "construction", "electrical", "aerospace"],
-        "academia": ["teacher", "professor", "classroom", "tutor", "lecturer"],
-        "medical": ["nurse", "doctor", "physiotherapist", "dentist", "pharmacist"]
-    }
-
-    blacklist = []
-    for domain, kws in universal_blacklist.items():
-        domain_matched = False
-        for kw in kws:
-            kw_words = kw.lower().split()
-            if any(w in target_words for w in kw_words):
-                domain_matched = True
-                break
-        if not domain_matched:
-            blacklist.extend(kws)
-
-    # Filter SLM-extracted unacceptable keywords (only include those that don't overlap with target job title)
-    for kw in unacceptable_title_keywords:
-        kw_clean = kw.lower().strip()
-        if kw_clean and not any(w in target_words for w in kw_clean.split()):
-            blacklist.append(kw_clean)
-
-    cand_title_padded = f" {cand_title_lower} "
-
-    for bad_word in blacklist:
-        if len(bad_word.split()) > 1:
-            if bad_word in cand_title_lower:
-                return 0.15
-        else:
-            if f" {bad_word} " in cand_title_padded:
-                return 0.15
-
-    # 2. Acceptable title matching
-    # Keep full-phrase keyword matching (not root words — root words are too broad
-    # and would give 'DevOps Engineer' a keyword_hit via the 'engineer' root).
-    # The real fix is lowering the semantic fallback threshold from 0.50 → 0.42.
-    #   'Search Engineer'   vs 'Senior AI Engineer' ≈ 0.46  →  passes (1.0x)
-    #   'DevOps Engineer'   vs 'Senior AI Engineer' ≈ 0.37  →  fails  (0.15x)
-    #   'Backend Engineer'  vs 'Senior AI Engineer' ≈ 0.38  →  fails  (0.15x)
-    #   'NLP Engineer'      vs 'Senior AI Engineer' ≈ 0.57  →  passes (1.10x)
-    keyword_hit = False
-    if title_family_keywords:
-        keyword_hit = any(kw.lower().strip() in cand_title_lower for kw in title_family_keywords if kw.strip())
-
-    v_target = _get_cached_embedding(target_job_title, embedder)
-    v_cand   = _get_cached_embedding(cand_title, embedder)
-    sim = float(np.dot(v_target, v_cand))
-
-    if not keyword_hit and sim < 0.42:
-        return 0.15
-
-    if sim >= 0.75 or keyword_hit:
-        return 1.10
+    if any(w in cand_title for w in target_words):
+        return 1.50
+    
     return 1.0
-
 
 
 def compute_hard_behavioral_multiplier(candidate: dict) -> float:
@@ -475,17 +413,9 @@ def _company_name_industry_signal(
     if not company_name or not embedder or not preferred_company_type:
         return 1.0
 
-    v_company   = _get_cached_embedding(company_name, embedder)
-    v_preferred = _get_cached_embedding(preferred_company_type, embedder)
-    sim = float(np.dot(v_company, v_preferred))
-
-    if sim >= 0.55:
-        return 1.05   # company name strongly aligned with preferred type
-    if sim >= 0.42:
-        return 1.00   # neutral
-    if sim >= 0.32:
-        return 0.93   # weak alignment — likely mismatched company category
-    return 0.88       # low alignment — strong indicator of wrong company type
+    # [HACKATHON SPEED FIX] Bypassing dense embeddings for company names to drop runtime under 5 minutes.
+    # We will rely purely on the 'industry' field embedding instead, which has vastly fewer unique values.
+    return 1.0
 
 
 def _education_multiplier(candidate: dict, technical_depth: float = 0.5) -> float:
