@@ -1,27 +1,58 @@
 team_name: "Little Boy"
+
+primary_contact:
+  name: "KARAN DHOTE"
+  email: "karan.sdhote@gmail.com"
+  phone: "+91-XXXXXXXXXX"   # fill in your number
+
 team_members:
   - name: "KARAN DHOTE"
     email: "karan.sdhote@gmail.com"
+    role: "Team Lead / ML Engineer"
 
-approach_summary: >
-  5-stage deterministic CPU pipeline. Key insight: the 100k candidate
-  pool has career descriptions generated from 44 unique templates.
-  We classify each template to a base relevance score (0-100),
-  apply product-company (1.25x) and consulting-firm (0.65x) multipliers,
-  then multiply by a composite behavioral signal score from all 23
-  Redrob platform signals. Runs in ~9 seconds with no GPU, no network,
-  and no external models.
-
+github_repo: "https://github.com/Karan825/RetrievAl"
+sandbox_link: "https://share.streamlit.io/karan825/retrieval/main/vrd/app.py"
 reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
 
-runtime_seconds: 9
-peak_ram_gb: 1.2
-gpu_required: false
-network_required: false
+compute:
+  platform: "Local Windows PC"
+  cpu_cores: 4
+  ram_gb: 16
+  python_version: "3.12"
+  os: "Windows 11"
+  uses_gpu_for_inference: false
+  has_network_during_ranking: false
+  pre_computation_required: true
+  pre_computation_time_minutes: 2   # JD_parser.py runs once offline to generate jd_embeddings.npz
 
-sandbox_url: "https://share.streamlit.io/karan825/retrieval/main/vrd/app.py"
+ai_tools_used:
+  - "Antigravity (Google DeepMind)"
+  - "Claude"
 
-tech_stack:
-  - Python 3.12 (stdlib only for ranking)
-  - Streamlit (demo sandbox only)
-  - Pandas (demo sandbox only)
+ai_usage_summary: |
+  Used AI coding assistant for architecture review, code analysis, and debugging.
+  The pipeline itself runs 100% offline — no candidate data was sent to any external LLM.
+  Ranking uses a locally-stored Qwen 2.5 1.5B (GGUF) model and BGE-small-en-v1.5 embeddings.
+
+methodology_summary: |
+  5-stage CPU-only pipeline operating fully offline:
+  (1) Honeypot elimination — 5 structural data-integrity checks (impossible skill durations,
+      overlapping jobs, YOE discrepancies, synthetic-profile patterns).
+  (2) JD parsing — offline Qwen 2.5 1.5B extracts must-have skills, disqualifiers,
+      domain keywords, seniority target, and YOE constraints into jd_metadata.json.
+  (3) Dual-vector semantic matching — BGE-small encodes career descriptions against
+      a positive JD vector (core skills + impact signals) minus an adaptive-beta negative
+      vector (disqualifiers + anti-patterns). Career jobs weighted by duration and recency.
+  (4) Composite scoring — 19 behavioral signal multipliers (activity, response rate,
+      GitHub, skill assessments, offer acceptance, market demand, education tier,
+      career trajectory, career industry alignment, and more).
+  (5) LLM reasoning — Qwen 2.5 1.5B generates fact-grounded, JD-anchored hiring briefs
+      for the top 15 candidates; structured templates for ranks 16-100.
+  Runs in ~4 minutes on CPU, no network required during ranking.
+
+declarations:
+  read_submission_spec: true
+  code_is_original_work: true
+  no_collusion: true
+  honeypot_check_done: true
+  reproduction_tested: true

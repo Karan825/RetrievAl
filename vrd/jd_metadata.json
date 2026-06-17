@@ -1,4 +1,5 @@
 {
+  "company": "Redrob AI",
   "job_title": "Senior AI Engineer",
   "must_have_hard_skills": [
     "Production experience with embeddings-based retrieval systems (sentence-transformers, OpenAI embeddings, BGE, E5, or similar) deployed to real users",
@@ -10,35 +11,210 @@
     "Audit what we currently have (it's mostly BM25 + rule-based scoring, working but not great)",
     "Ship a v2 ranking system that demonstrably improves recruiter-engagement metrics",
     "Set up the evaluation infrastructure \u2014 offline benchmarks, online A/B testing, recruiter-feedback loops",
-    "Drive the long-term architecture of how we do candidate-JD matching at scale",
+    "Set up the long-term architecture of how we do candidate-JD matching at scale",
     "Mentor the next round of hires",
     "Work closely with our recruiter-experience PM on what to build"
   ],
   "culture_and_behavior": [
-    "Scrappy product-engineering attitude",
-    "Deep technical depth in modern ML systems",
-    "Comfortable with two contradictory things",
-    "Tilt slightly toward shipper"
+    "We work async-first and write a lot",
+    "We disagree openly and decide quickly",
+    "We move fast and break things, with the caveat that 'things' are usually our internal assumptions, not user-facing systems"
   ],
   "abstract_disqualifiers": [
-    "Pure research environments without production deployment",
-    "Primary expertise in computer vision, speech, or robotics without significant NLP/IR exposure",
-    "Worked at consulting firms for 5+ years without product-company experience",
-    "Primary expertise in closed-source proprietary systems without external validation"
+    "If you've spent your career in pure research environments (academic labs, research-only roles) without any production deployment",
+    "If your 'AI experience' consists primarily of recent (under 12 months) projects using LangChain to call OpenAI",
+    "If you are a senior engineer who hasn't written production code in the last 18 months because you've moved into 'architecture' or 'tech lead' roles"
   ],
   "negative_tools_or_patterns": [
-    "Framework enthusiasts",
     "Title-chasers",
-    "People who have only worked at consulting firms",
-    "People whose primary expertise is computer vision, speech, or robotics without significant NLP/IR exposure"
+    "Framework enthusiasts",
+    "People who have only worked at consulting firms (TCS, Infosys, Wipro, Accenture, Cognizant, Capgemini, etc.) in their entire career",
+    "People whose primary expertise is computer vision, speech, or robotics without significant NLP/IR exposure",
+    "People whose work has been entirely on closed-source proprietary systems for 5+ years without external validation (papers, talks, open-source)"
   ],
   "metadata_constraints": {
     "min_yoe": 5,
     "max_yoe": 9,
-    "preferred_company_type": "product companies",
+    "preferred_company_type": "product company",
     "preferred_locations": [
       "Noida",
       "Pune"
     ]
-  }
+  },
+  "domain_keywords": [
+    "embedding",
+    "retrieval",
+    "ranking",
+    "LLM",
+    "fine-tuning",
+    "vector database",
+    "Pinecone",
+    "Weaviate",
+    "Qdrant",
+    "Milvus",
+    "OpenSearch",
+    "Elasticsearch",
+    "FAISS",
+    "sentence-transformers",
+    "Python",
+    "NDCG",
+    "MRR",
+    "MAP",
+    "offline-to-online correlation",
+    "A/B test interpretation"
+  ],
+  "must_have_skills_short": [
+    "embeddings",
+    "retrieval",
+    "ranking",
+    "fine-tuning",
+    "vector database",
+    "Python",
+    "NDCG",
+    "MRR",
+    "MAP",
+    "offline-to-online correlation",
+    "A/B test interpretation"
+  ],
+  "seniority_target": "senior",
+  "title_family_keywords": [
+    "AI Engineer",
+    "Senior AI Engineer",
+    "AI Engineer",
+    "Senior AI Engineer"
+  ],
+  "unacceptable_title_keywords": [
+    "engineer",
+    "developer",
+    "programmer",
+    "scientist",
+    "finance",
+    "legal"
+  ],
+  "disqualifier_rules": [
+    {
+      "description": "If you've spent your career in pure research environments (academic labs, research-only roles) without any production deployment",
+      "trigger_skills": [
+        "pure research",
+        "academic labs",
+        "research-only roles",
+        "production deployment"
+      ],
+      "exception_skills": [
+        "production deployment"
+      ],
+      "company_keywords": []
+    },
+    {
+      "description": "If your 'AI experience' consists primarily of recent (under 12 months) projects using LangChain to call OpenAI",
+      "trigger_skills": [
+        "langchain",
+        "openai"
+      ],
+      "exception_skills": [
+        "nlp",
+        "retrieval",
+        "search",
+        "rag",
+        "embeddings",
+        "llm",
+        "transformers",
+        "natural language processing",
+        "information retrieval"
+      ],
+      "company_keywords": []
+    },
+    {
+      "description": "If you are a senior engineer who hasn't written production code in the last 18 months because you've moved into 'architecture' or 'tech lead' roles",
+      "trigger_skills": [
+        "production code",
+        "architecture",
+        "tech lead"
+      ],
+      "exception_skills": [
+        "architecture",
+        "tech lead"
+      ],
+      "company_keywords": []
+    },
+    {
+      "description": "Title-chasers",
+      "trigger_skills": [],
+      "exception_skills": [],
+      "company_keywords": []
+    },
+    {
+      "description": "Framework enthusiasts",
+      "trigger_skills": [],
+      "exception_skills": [],
+      "company_keywords": []
+    },
+    {
+      "description": "People who have only worked at consulting firms (TCS, Infosys, Wipro, Accenture, Cognizant, Capgemini, etc.) in their entire career",
+      "trigger_skills": [],
+      "exception_skills": [],
+      "company_keywords": [
+        "consulting",
+        "tcs",
+        "wipro",
+        "infosys",
+        "accenture",
+        "cognizant",
+        "capgemini",
+        "services",
+        "agency"
+      ]
+    },
+    {
+      "description": "People whose primary expertise is computer vision, speech, or robotics without significant NLP/IR exposure",
+      "trigger_skills": [
+        "computer vision",
+        "yolo",
+        "speech recognition",
+        "tts",
+        "asr",
+        "robotics",
+        "cv",
+        "image classification",
+        "object detection",
+        "speech to text",
+        "text to speech"
+      ],
+      "exception_skills": [
+        "nlp",
+        "retrieval",
+        "search",
+        "rag",
+        "embeddings",
+        "llm",
+        "transformers",
+        "natural language processing",
+        "information retrieval"
+      ],
+      "company_keywords": []
+    },
+    {
+      "description": "People whose work has been entirely on closed-source proprietary systems for 5+ years without external validation (papers, talks, open-source)",
+      "trigger_skills": [
+        "closed-source",
+        "proprietary",
+        "system",
+        "papers",
+        "talks",
+        "open-source"
+      ],
+      "exception_skills": [
+        "nlp",
+        "retrieval",
+        "search",
+        "rag",
+        "embeddings",
+        "llm",
+        "transformers",
+        "natural language processing",
+        "information retrieval"
+      ],
+      "company_keywords": []
+    }
+  ]
 }

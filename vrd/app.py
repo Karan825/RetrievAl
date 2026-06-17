@@ -259,6 +259,9 @@ def score_candidates(candidates_data, v_core, v_neg, meta, embedder, progress_in
     constraints = meta.get("metadata_constraints", {})
     min_yoe = float(constraints.get("min_yoe", 5.0))
     max_yoe = float(constraints.get("max_yoe", 9.0))
+    pref_locs = constraints.get("preferred_locations", [])
+    target_job_title = meta.get("job_title", "Professional")
+    preferred_company_type = constraints.get("preferred_company_type", "")
 
     def _yoe_modifier(candidate_yoe):
         if min_yoe <= candidate_yoe <= max_yoe: return 1.00
@@ -302,14 +305,40 @@ def score_candidates(candidates_data, v_core, v_neg, meta, embedder, progress_in
         raw_career_score = (total_weighted_score / total_weight) if total_weight > 0 else 0.0
         base_score = max(0, raw_career_score * 100)
         
-        final_score = base_score * _yoe_modifier(yoe) * compute_signal_multiplier(candidate)
+        final_score = base_score * _yoe_modifier(yoe) * compute_signal_multiplier(
+            candidate=candidate,
+            preferred_locations=pref_locs,
+            target_job_title=target_job_title,
+            preferred_company_type=preferred_company_type,
+            embedder=embedder
+        )
         scored.append((final_score, candidate, base_score))
 
     scored.sort(key=lambda x: (-x[0], x[1]["candidate_id"]))
-    
+    top_100 = scored[:100]
+
+    # Min-max normalize scores of top candidates to [0, 1]
+    if top_100:
+        scores = [item[0] for item in top_100]
+        max_score = max(scores)
+        min_score = min(scores)
+        normalized_top_100 = []
+        for score, candidate, base_score in top_100:
+            if max_score > min_score:
+                norm_score = (score - min_score) / (max_score - min_score)
+            else:
+                norm_score = 1.0
+            # Round score here to 4 decimal places before sorting to prevent rounded-value tie errors
+            norm_score_rounded = round(norm_score, 4)
+            normalized_top_100.append((norm_score_rounded, candidate, base_score))
+        
+        # Re-sort to resolve any rounding ties alphabetically by candidate_id ascending
+        normalized_top_100.sort(key=lambda x: (-x[0], x[1]["candidate_id"]))
+        top_100 = normalized_top_100
+
     from main_ranker import generate_detailed_reasoning
     results = []
-    for rank_idx, (score, candidate, base_score) in enumerate(scored[:100], start=1):
+    for rank_idx, (score, candidate, base_score) in enumerate(top_100, start=1):
         cid = candidate["candidate_id"]
         rounded_score = round(float(score), 4)
         reasoning = generate_detailed_reasoning(candidate, score, rank_idx, meta)
