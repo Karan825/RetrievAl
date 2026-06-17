@@ -1028,7 +1028,13 @@ def run(candidates_path, jd_embed_path, jd_meta_path, out_path):
         writer = csv.writer(fh, quoting=csv.QUOTE_MINIMAL)
         writer.writerow(["candidate_id", "rank", "score", "reasoning"])
 
-        for rank_idx, (score, candidate, base_score) in enumerate(top, start=1):
+        try:
+            from tqdm import tqdm
+            iterator = tqdm(top, desc="Generating Reasoning & Writing CSV", total=len(top))
+        except ImportError:
+            iterator = top
+
+        for rank_idx, (score, candidate, base_score) in enumerate(iterator, start=1):
             cid = candidate["candidate_id"]
 
             # Use LLM for top candidates; fall back to template for the rest
