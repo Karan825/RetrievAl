@@ -8,11 +8,11 @@ primary_contact:
 team_members:
   - name: "KARAN DHOTE"
     email: "karan.sdhote@gmail.com"
-    role: "Team Lead / ML Engineer"
+    role: "ML Engineer"
 
 github_repo: "https://github.com/Karan825/RetrievAl"
-sandbox_link: "https://share.streamlit.io/karan825/retrieval/main/vrd/app.py"
-reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
+sandbox_link: "https://colab.research.google.com/github/Karan825/RetrievAl/blob/main/sandbox_demo.ipynb"
+reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./LittleBoy.csv"
 
 compute:
   platform: "Local Windows PC"
