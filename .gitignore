@@ -1,6 +1,5 @@
 # Data files — too large for git
 candidates.jsonl
-sample_candidates.json
 
 # Output
 submission.csv
@@ -27,3 +26,7 @@ scratch/
 Thumbs.db
 vrd/local_bge_model/
 vrd/qwen2.5-1.5b-instruct-q4_k_m.gguf
+.idea/
+.streamlit/
+vrd/.streamlit/
+
