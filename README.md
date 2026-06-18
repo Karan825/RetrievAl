@@ -15,8 +15,6 @@ We provide a Google Colab sandbox for reproducing and testing the candidate rank
 
 👉 **[Open In Google Colab](https://colab.research.google.com/github/Karan825/RetrievAl/blob/main/sandbox_demo.ipynb)**
 
-*This environment is optimized to install all dependencies (including local model binding engines) in under 10 seconds using precompiled CPU wheels.*
-
 ---
 
 ## Local Installation & Setup
