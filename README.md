@@ -57,7 +57,7 @@ python vrd/JD_parser.py
 
 To execute the ranking pipeline on the full dataset or any test file:
 ```bash
-python rank.py --candidates ./candidates.jsonl --out ./submission.csv
+python rank.py --candidates ./candidates.jsonl --out ./LittleBoy.csv
 ```
 
 ---
@@ -114,4 +114,4 @@ For the top-ranked candidates, we run a local **Qwen 2.5 1.5B GGUF** model using
 *   **RAM Footprint**: Under **1.2 GB** memory footprint (well within the 16 GB limit).
 *   **Disk Footprint**: Total model weight size is **~1.2 GB** (well within the 5 GB limit).
 *   **Honeypot Rate**: Discards 90%+ fake profiles prior to ranking, ensuring a honeypot pass rate under the 10% target limit.
-*   **Format**: Generates a standard `submission.csv` containing exactly 100 sorted data rows, matching the required schema.
+*   **Format**: Generates a standard CSV file (e.g. `LittleBoy.csv`) containing exactly 100 sorted data rows, matching the required schema.

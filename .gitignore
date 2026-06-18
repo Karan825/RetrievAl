@@ -3,6 +3,7 @@ candidates.jsonl
 
 # Output
 submission.csv
+vrd/submission.csv
 
 # Python
 __pycache__/
