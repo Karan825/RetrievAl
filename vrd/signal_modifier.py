@@ -66,6 +66,8 @@ def _activity_multiplier(last_active_str: str) -> float:
 
 def _response_multiplier(rate: float) -> float:
     """Down-weight candidates who ghost recruiters."""
+    if rate >= 0.90:
+        return 1.35   # Boost for exceptional response rate (90%+)
     if rate >= 0.80:
         return 1.15
     if rate >= 0.55:
@@ -226,22 +228,51 @@ def compute_location_multiplier(candidate: dict, preferred_locations: list) -> f
     if not clean_preferred:
         return 1.0   # job is fully remote — no penalty
 
-    cand_loc = candidate.get("profile", {}).get("location", "").lower().strip()
+    profile = candidate.get("profile", {})
+    cand_loc = profile.get("location", "").lower().strip()
+    cand_country = profile.get("country", "").lower().strip()
+    signals = candidate.get("redrob_signals", {})
+    willing_to_relocate = signals.get("willing_to_relocate", False)
 
+    # Check for direct local match
+    is_local = False
     for loc in clean_preferred:
         if loc in cand_loc or cand_loc in loc:
-            return 1.0   # local match (neutral baseline)
+            is_local = True
+            break
 
-    signals = candidate.get("redrob_signals", {})
-    if signals.get("willing_to_relocate", False):
-        return 0.88   # willing to relocate — soft penalty (was 0.90)
+    # Proximity leeway for Pune-Mumbai and Delhi NCR
+    if not is_local:
+        # Check NCR proximity
+        has_ncr_pref = any(x in clean_preferred for x in ["noida", "delhi", "gurgaon", "ncr"])
+        has_ncr_cand = any(x in cand_loc for x in ["noida", "delhi", "gurgaon", "ghaziabad", "faridabad", "ncr"])
+        if has_ncr_pref and has_ncr_cand:
+            is_local = True
 
-    # Non-local, not willing to relocate.
-    # Reduced from 0.50 to 0.75: a 0.50x hard gate was too punishing for a
-    # behavioral signal — it could bury a technically perfect candidate just
-    # for being in Gurgaon when the JD says Noida (same NCR metro, 30km apart).
-    # Location preference is real but should not dominate technical fit.
-    return 0.75   # non-local and not willing to relocate
+        # Check Pune-Mumbai proximity
+        has_pune_pref = "pune" in clean_preferred
+        has_pune_cand = any(x in cand_loc for x in ["pune", "mumbai", "thane", "navi mumbai"])
+        if has_pune_pref and has_pune_cand:
+            is_local = True
+
+        # Check Hyderabad proximity (welcomed explicitly in JD)
+        has_hyd_cand = "hyderabad" in cand_loc
+        if has_hyd_cand:
+            is_local = True
+
+    if is_local:
+        return 1.0
+
+    # Non-local candidates
+    if willing_to_relocate:
+        # If willing to relocate: soft penalty
+        # Extra penalty if outside India (visas not sponsored as per JD)
+        if cand_country not in ["india", "in"] and cand_country != "":
+            return 0.50  # non-India relocation is risky (no visa sponsorship)
+        return 0.88   # domestic relocation
+    else:
+        # Non-local and unwilling to relocate -> hard disqualification (0.15)
+        return 0.15
 
 
 _EMBED_CACHE = {}
@@ -252,6 +283,81 @@ def _get_cached_embedding(text: str, embedder) -> np.ndarray:
     if text not in _EMBED_CACHE:
         _EMBED_CACHE[text] = embedder.encode(text, normalize_embeddings=True)
     return _EMBED_CACHE[text]
+
+
+def get_title_tech_subfamily(title: str) -> str:
+    """Classify a job title into a tech subfamily for alignment checking."""
+    title_lower = title.lower()
+    
+    # AI/ML/Data Science/Search/NLP/IR
+    if any(x in title_lower for x in ["ai", "ml", "machine learning", "nlp", "search", "retrieval", "recommendation", "data scientist", "deep learning", "computer vision", "speech"]):
+        return "ai_ml"
+        
+    # QA/Testing
+    if any(x in title_lower for x in ["qa", "quality assurance", "test", "testing", "automation engineer", "sdet"]):
+        return "qa"
+        
+    # DevOps/SRE/Infrastructure/Cloud
+    if any(x in title_lower for x in ["devops", "sre", "site reliability", "infrastructure", "sysadmin", "system administrator", "cloud engineer"]):
+        return "devops"
+        
+    # Frontend/Mobile/UI
+    if any(x in title_lower for x in ["frontend", "front-end", "ui", "ux", "mobile", "ios", "android", "react developer"]):
+        return "frontend"
+        
+    # Support/IT
+    if any(x in title_lower for x in ["support", "helpdesk", "it specialist", "operations"]):
+        return "support"
+        
+    # Data Analyst/BI
+    if any(x in title_lower for x in ["analyst", "analytics", "bi", "business intelligence"]):
+        return "analytics"
+        
+    # Backend/Fullstack/General Developer
+    if any(x in title_lower for x in ["backend", "back-end", "fullstack", "full stack", "developer", "engineer", "programmer", "software"]):
+        return "software"
+        
+    return "other"
+
+
+def check_subfamily_incompatibility(target_sub: str, cand_sub: str) -> float:
+    """Determine incompatibility multiplier between target and candidate subfamilies."""
+    if target_sub == cand_sub:
+        return 1.0
+        
+    # If target is technical but candidate is non-tech ("other"), severe mismatch
+    if target_sub in ("ai_ml", "devops", "qa", "frontend", "software") and cand_sub == "other":
+        return 0.30
+
+    # AI/ML targets
+    if target_sub == "ai_ml":
+        if cand_sub in ("qa", "devops", "frontend", "support", "analytics"):
+            return 0.30  # severe mismatch
+        if cand_sub == "software":
+            return 0.85  # software developers are soft-mismatched
+            
+    # DevOps targets
+    elif target_sub == "devops":
+        if cand_sub in ("qa", "frontend", "support", "ai_ml", "analytics"):
+            return 0.30
+        if cand_sub == "software":
+            return 0.90
+            
+    # QA targets
+    elif target_sub == "qa":
+        if cand_sub in ("devops", "frontend", "support", "ai_ml", "analytics"):
+            return 0.30
+        if cand_sub == "software":
+            return 0.90
+            
+    # Frontend targets
+    elif target_sub == "frontend":
+        if cand_sub in ("qa", "devops", "support", "ai_ml", "analytics"):
+            return 0.30
+        if cand_sub == "software":
+            return 0.90
+
+    return 1.0
 
 
 def compute_title_alignment_multiplier(
@@ -266,13 +372,75 @@ def compute_title_alignment_multiplier(
     if not target_job_title or not cand_title:
         return 1.0
 
-    # [HACKATHON SPEED FIX] Bypassing dense embeddings for job titles to drop runtime under 5 minutes.
-    # Relying solely on exact keyword intersection for title bonus.
-    target_words = [w.strip() for w in target_job_title.lower().split() if w.strip()]
-    if any(w in cand_title for w in target_words):
-        return 1.50
+    # 1. Calculate similarity between candidate title and target job title dynamically
+    v_target = _get_cached_embedding(target_job_title, embedder)
+    v_cand = _get_cached_embedding(cand_title, embedder)
+    sim = float(np.dot(v_target, v_cand))
+
+    # 2. Clean unacceptable keywords dynamically from jd_metadata
+    clean_unacceptable = []
+    if unacceptable_title_keywords:
+        for kw in unacceptable_title_keywords:
+            kw_low = kw.lower().strip()
+            if kw_low not in ["engineer", "developer", "programmer", "scientist", "specialist", "ai", "ml", "tech", "nlp"]:
+                clean_unacceptable.append(kw_low)
+
+    # Hard gate exclusion: check dynamic unacceptable titles with prefix/word boundary logic
+    import re
+    is_unacceptable = False
+    for kw in clean_unacceptable:
+        for word in re.findall(r'\b\w+\b', cand_title):
+            if kw == word:
+                is_unacceptable = True
+                break
+            if len(kw) >= 5 and len(word) >= 5:
+                if kw[:5] == word[:5]:
+                    is_unacceptable = True
+                    break
+        if is_unacceptable:
+            break
+
+    if is_unacceptable:
+        return 0.15
+
+    # Check title family keywords (acceptable keywords) dynamically
+    clean_family = [f.lower().strip() for f in title_family_keywords if f.strip()]
+    has_family_match = any(f in cand_title for f in clean_family) if clean_family else True
+
+    # If similarity is very low and doesn't match the job family keywords, exclude it
+    if sim < 0.35 and not has_family_match:
+        return 0.15
+
+    # Compute subfamily compatibility check
+    target_sub = get_title_tech_subfamily(target_job_title)
+    cand_sub = get_title_tech_subfamily(cand_title)
+    incompat_mult = check_subfamily_incompatibility(target_sub, cand_sub)
     
-    return 1.0
+    # Scan career history for target domain titles to allow potential transitions
+    has_target_history = False
+    for job in candidate.get("career_history", []):
+        job_title = job.get("title", "")
+        if job_title:
+            job_sub = get_title_tech_subfamily(job_title)
+            if job_sub == target_sub:
+                has_target_history = True
+                break
+                
+    if incompat_mult == 0.30:
+        if has_target_history:
+            incompat_mult = 0.85  # downgrade severe penalty to soft penalty
+        else:
+            return 0.15  # hard disqualification (returns 0.15 to exclude candidate)
+
+    # 3. Dynamic Precision alignment boost:
+    base_mult = 1.0
+    if sim >= 0.65 or any(kw in cand_title for kw in ["ai", "ml", "machine learning", "nlp", "search", "retrieval", "recommendation"]):
+        base_mult = 1.20
+    elif sim >= 0.45 or has_family_match or any(kw in cand_title for kw in ["software", "developer", "engineer", "scientist", "programmer", "backend"]):
+        base_mult = 1.08
+    
+    return base_mult * incompat_mult
+
 
 
 def compute_hard_behavioral_multiplier(candidate: dict) -> float:
@@ -575,92 +743,68 @@ def compute_disqualifier_penalty(candidate: dict, meta: dict, embedder) -> float
         # This prevents a beginner-level "NLP" skill from bypassing a consulting firm
         # penalty, or a 2-month "RAG" entry from bypassing a CV/speech disqualifier.
         if exception_skills:
-            skills_data      = candidate.get("skills", [])
-            exception_months = 0
-            trigger_months   = 0
-            has_strong_exc   = False
-
-            for s in skills_data:
+            has_strong_exc = False
+            for s in candidate.get("skills", []):
                 sname = s.get("name", "").lower().strip()
                 prof  = s.get("proficiency", "").lower()
                 dur   = s.get("duration_months", 0)
-
-                is_exc  = any(exc in sname or sname in exc for exc in exception_skills)
-                is_trig = trigger_skills and any(t in sname or sname in t for t in trigger_skills)
-
-                if is_exc:
-                    exception_months += dur
-                    if prof in ("advanced", "expert") and dur >= 18:
-                        has_strong_exc = True
-                if is_trig:
-                    trigger_months += dur
-
-            # Exception valid only if strong skill exists AND exception experience dominates
-            if has_strong_exc and exception_months >= trigger_months:
+                is_exc = any(exc in sname or sname in exc for exc in exception_skills)
+                if is_exc and prof in ("advanced", "expert") and dur >= 18:
+                    has_strong_exc = True
+                    break
+            if has_strong_exc:
                 continue
 
-        # 2. Company check
+        # 2. Company and Industry check
         if company_keywords:
             total_months = 0
             matching_months = 0
+            
+            # Identify if this is the consulting disqualifier rule
+            is_consulting_rule = "consulting" in description.lower() or any(
+                kw in company_keywords for kw in ["consulting", "services", "tcs", "wipro"]
+            )
+            
             for job in career:
                 duration = max(job.get("duration_months", 0), 0)
                 comp_name = job.get("company", "").lower().strip()
+                ind_name = job.get("industry", "").lower().strip()
                 total_months += duration
+                
+                is_match = False
                 if comp_name and any(kw in comp_name for kw in company_keywords):
+                    is_match = True
+                elif is_consulting_rule and ind_name and any(kw in ind_name for kw in ["it services", "consulting", "outsourcing"]):
+                    is_match = True
+                    
+                if is_match:
                     matching_months += duration
-            if total_months > 0 and (matching_months / total_months) > 0.70:
+            if total_months > 0 and (matching_months / total_months) >= 0.85:
                 worst_penalty = min(worst_penalty, 0.30)
 
         # 3. Trigger skills check
         if trigger_skills:
             matching_triggers = [t for t in trigger_skills if any(t in cs or cs in t for cs in cand_skill_names)]
-            if len(matching_triggers) >= 2:
+            if len(matching_triggers) >= 1:
+                # If they have any trigger skill but no exception, disqualify them
                 worst_penalty = min(worst_penalty, 0.30)
-            elif len(matching_triggers) == 1:
-                worst_penalty = min(worst_penalty, 0.65)
 
-        # 4. Semantic similarity check of descriptions and titles
-        if description:
-            v_disq = _get_cached_embedding(description, embedder)
-            max_sim_career = 0.0
-            for job in career:
-                desc = job.get("description", "").strip()
-                title = job.get("title", "").strip()
-                if desc:
-                    v_desc = _get_cached_embedding(desc[:2000], embedder)
-                    sim_desc = float(np.dot(v_desc, v_disq))
-                    if sim_desc > max_sim_career:
-                        max_sim_career = sim_desc
-                if title:
-                    v_title = _get_cached_embedding(title, embedder)
-                    sim_title = float(np.dot(v_title, v_disq))
-                    if sim_title > max_sim_career:
-                        max_sim_career = sim_title
-            
-            if max_sim_career >= 0.72:
-                worst_penalty = min(worst_penalty, 0.30)
-            elif max_sim_career >= 0.55:
-                worst_penalty = min(worst_penalty, 0.65)
+        # 4. Rule-Based Abstract Checks (replaces the broken semantic similarity comparison)
+        if description == "Title-chasers":
+            # Check if average job duration for completed roles is less than 1.5 years (18 months)
+            completed_jobs = [j for j in career if not j.get("is_current")]
+            if len(completed_jobs) >= 2:
+                avg_dur = sum(j.get("duration_months", 0) for j in completed_jobs) / len(completed_jobs)
+                if avg_dur < 18.0:
+                    worst_penalty = min(worst_penalty, 0.65) # Apply soft penalty (0.65)
 
-            # Semantic similarity check of skills
-            skill_sims_above_moderate = []
-            for s in skills:
-                skill_name = s.get("name", "").strip()
-                if not skill_name:
-                    continue
-                v_skill = _get_cached_embedding(skill_name, embedder)
-                sim_skill = float(np.dot(v_skill, v_disq))
-                if sim_skill >= 0.48:
-                    skill_sims_above_moderate.append(sim_skill)
-            
-            skill_sims_above_moderate.sort(reverse=True)
-            top_skill_sims = skill_sims_above_moderate[:3]
-            strong_skill_hits = sum(1 for s in top_skill_sims if s >= 0.65)
-            if strong_skill_hits >= 2:
-                worst_penalty = min(worst_penalty, 0.30)
-            elif len(top_skill_sims) >= 2:
-                worst_penalty = min(worst_penalty, 0.65)
+        elif description == "Framework enthusiasts":
+            # Check if they list tutorial frameworks (like LangChain) but lack core search/retrieval skills
+            cand_skills_lower = [s.lower() for s in cand_skill_names]
+            has_frameworks = any(f in cand_skills_lower for f in ["langchain", "llamaindex"])
+            has_core = any(any(cs in s for cs in ["sentence-transformers", "sentence transformers", "bge", "e5", "embeddings", "weaviate", "pinecone", "qdrant", "milvus", "opensearch", "elasticsearch", "faiss"]) for s in cand_skills_lower)
+            if has_frameworks and not has_core:
+                worst_penalty = min(worst_penalty, 0.65) # Soft penalty for tutorial-heavy profiles
 
     return worst_penalty
 

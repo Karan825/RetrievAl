@@ -242,38 +242,69 @@ def load_jd_brain():
         
         data = np.load(embed_path)
         v_core, v_neg = data['v_core'], data['v_neg']
+        try:
+            v_skills = data['v_skills']
+        except KeyError:
+            v_skills = v_core
         if len(v_core.shape) == 2: v_core = v_core[0]
         if len(v_neg.shape) == 2: v_neg = v_neg[0]
+        if len(v_skills.shape) == 2: v_skills = v_skills[0]
         
         with open(meta_path, "r") as f:
             meta = json.load(f)
             
-        return v_core, v_neg, meta
+        return v_core, v_neg, v_skills, meta
     except Exception as e:
-        return None, None, None
+        return None, None, None, None
 
 # ==========================================
 # 3. RANKING LOGIC
 # ==========================================
-def score_candidates(candidates_data, v_core, v_neg, meta, embedder, progress_info, progress_bar):
+def score_candidates(candidates_data, v_core, v_neg, v_skills, meta, embedder, progress_info, progress_bar):
     constraints = meta.get("metadata_constraints", {})
     min_yoe = float(constraints.get("min_yoe", 5.0))
     max_yoe = float(constraints.get("max_yoe", 9.0))
     pref_locs = constraints.get("preferred_locations", [])
     target_job_title = meta.get("job_title", "Professional")
     preferred_company_type = constraints.get("preferred_company_type", "")
+    title_family_keywords = meta.get("title_family_keywords", [])
+    unacceptable_title_keywords = meta.get("unacceptable_title_keywords", [])
 
-    def _yoe_modifier(candidate_yoe):
-        if min_yoe <= candidate_yoe <= max_yoe: return 1.00
-        if min_yoe - 1 <= candidate_yoe < min_yoe or max_yoe < candidate_yoe <= max_yoe + 1: return 0.92
-        if min_yoe - 2 <= candidate_yoe < min_yoe - 1: return 0.78
-        if candidate_yoe > max_yoe + 1: return 0.82
-        return 0.50
+    from main_ranker import (
+        _HARD_REQ_CATEGORIES,
+        _MUST_HAVE_ALIASES,
+        _yoe_modifier,
+        compute_must_have_match,
+        integrity_penalty,
+        compute_skills_bonus,
+        compute_title_domain_bonus,
+        verify_skills_grounding
+    )
+    from signal_modifier import (
+        compute_location_multiplier,
+        compute_disqualifier_penalty,
+        compute_title_alignment_multiplier,
+        compute_hard_behavioral_multiplier,
+        compute_seniority_intent_multiplier
+    )
 
     @functools.lru_cache(maxsize=10000)
     def cached_embed_and_score(text: str):
-        v_job = embedder.encode(text, normalize_embeddings=True)
-        return float(np.dot(v_job, v_core)) - (0.3 * float(np.dot(v_job, v_neg)))
+        v_job   = embedder.encode(text, normalize_embeddings=True)
+        sim_pos = float(np.dot(v_job, v_core))
+        sim_neg = float(np.dot(v_job, v_neg))
+
+        # Adaptive beta
+        if sim_neg > 0.55 and sim_pos < 0.40:
+            beta = 0.60
+        elif sim_neg > 0.45:
+            beta = 0.40
+        else:
+            beta = 0.30
+
+        return sim_pos - (beta * sim_neg)
+
+    # Local helper functions and caches removed — now using imported top-level functions from main_ranker.py.
 
     scored = []
     dropped_hps = 0
@@ -292,6 +323,9 @@ def score_candidates(candidates_data, v_core, v_neg, meta, embedder, progress_in
         if not career: continue
 
         yoe = candidate.get("profile", {}).get("years_of_experience", 0)
+        if yoe < min_yoe:
+            continue
+
         total_weighted_score = 0.0
         total_weight = 0.0
 
@@ -305,43 +339,79 @@ def score_candidates(candidates_data, v_core, v_neg, meta, embedder, progress_in
         raw_career_score = (total_weighted_score / total_weight) if total_weight > 0 else 0.0
         base_score = max(0, raw_career_score * 100)
         
-        final_score = base_score * _yoe_modifier(yoe) * compute_signal_multiplier(
+        yoe_mod       = _yoe_modifier(yoe, min_yoe, max_yoe)
+        skills_mod    = compute_skills_bonus(candidate, meta, embedder, v_skills)
+        must_have_mod = compute_must_have_match(candidate, meta, embedder)
+        integ_mod     = integrity_penalty(candidate)
+        
+        loc_mod             = compute_location_multiplier(candidate, pref_locs)
+        disq_mod            = compute_disqualifier_penalty(candidate, meta, embedder)
+        title_alignment_mod = compute_title_alignment_multiplier(candidate, target_job_title, title_family_keywords, unacceptable_title_keywords, embedder)
+        hard_behavior_mod   = compute_hard_behavioral_multiplier(candidate)
+
+        if title_alignment_mod == 0.15:
+            continue
+        if disq_mod == 0.30:
+            continue
+
+        sig_mod       = compute_signal_multiplier(
             candidate=candidate,
             preferred_locations=pref_locs,
             target_job_title=target_job_title,
             preferred_company_type=preferred_company_type,
-            embedder=embedder
+            embedder=embedder,
+            meta=meta,
         )
+
+        skills_grounding_mod = verify_skills_grounding(candidate, embedder)
+        grounded_skills_mod = 1.0 + (skills_mod - 1.0) * skills_grounding_mod
+        skills_delta = base_score * (grounded_skills_mod - 1.0)
+
+        title_domain_bonus = compute_title_domain_bonus(candidate, embedder, v_core)
+        raw_technical_capacity = (base_score + skills_delta) * title_domain_bonus
+
+        technical_score = raw_technical_capacity * must_have_mod * yoe_mod * integ_mod
+        seniority_intent_mod = compute_seniority_intent_multiplier(candidate, meta)
+
+        SIG_NATURAL_MIN       = 0.85
+        SIG_NATURAL_MAX       = 2.0
+        BEHAVIORAL_CLAMP_LOW  = 0.93
+        BEHAVIORAL_CLAMP_HIGH = 1.07
+        raw_norm = (sig_mod - SIG_NATURAL_MIN) / (SIG_NATURAL_MAX - SIG_NATURAL_MIN)
+        sig_clamped = BEHAVIORAL_CLAMP_LOW + raw_norm * (BEHAVIORAL_CLAMP_HIGH - BEHAVIORAL_CLAMP_LOW)
+        sig_clamped = max(BEHAVIORAL_CLAMP_LOW, min(sig_clamped, BEHAVIORAL_CLAMP_HIGH))
+
+        final_score = technical_score * sig_clamped * hard_behavior_mod * title_alignment_mod * disq_mod * loc_mod * seniority_intent_mod
         scored.append((final_score, candidate, base_score))
 
     scored.sort(key=lambda x: (-x[0], x[1]["candidate_id"]))
     top_100 = scored[:100]
 
-    # Min-max normalize scores of top candidates to [0, 1]
+    # Log-scale normalize scores of top candidates to [0, 1]
     if top_100:
+        import math
         scores = [item[0] for item in top_100]
         max_score = max(scores)
         min_score = min(scores)
         normalized_top_100 = []
         for score, candidate, base_score in top_100:
             if max_score > min_score:
-                norm_score = (score - min_score) / (max_score - min_score)
+                norm_score = math.log1p(score - min_score) / math.log1p(max_score - min_score)
             else:
                 norm_score = 1.0
-            # Round score here to 4 decimal places before sorting to prevent rounded-value tie errors
             norm_score_rounded = round(norm_score, 4)
             normalized_top_100.append((norm_score_rounded, candidate, base_score))
         
-        # Re-sort to resolve any rounding ties alphabetically by candidate_id ascending
         normalized_top_100.sort(key=lambda x: (-x[0], x[1]["candidate_id"]))
         top_100 = normalized_top_100
-
-    from main_ranker import generate_detailed_reasoning
+        
+    from main_ranker import generate_template_reasoning
     results = []
     for rank_idx, (score, candidate, base_score) in enumerate(top_100, start=1):
         cid = candidate["candidate_id"]
         rounded_score = round(float(score), 4)
-        reasoning = generate_detailed_reasoning(candidate, score, rank_idx, meta)
+        # Note: app.py uses template reasoning locally since LLM call is only for final batch run
+        reasoning = generate_template_reasoning(candidate, score, rank_idx, meta)
         results.append({
             "candidate_id": cid,
             "rank": rank_idx, 
@@ -430,12 +500,13 @@ def process_custom_jd(jd_text):
     
     parsed_jd = parse_jd(llm, jd_text)
     expanded_negatives = expand_disqualifiers(llm, parsed_jd.get("abstract_disqualifiers", []), parsed_jd.get("job_title", "Professional"))
-    v_core_arr, v_culture_arr, v_neg_arr = create_embeddings(embedder, parsed_jd, expanded_negatives)
+    v_core_arr, v_culture_arr, v_neg_arr, v_skills_arr = create_embeddings(embedder, parsed_jd, expanded_negatives)
     
     v_core_processed = v_core_arr[0] if len(v_core_arr.shape) == 2 else v_core_arr
     v_neg_processed = v_neg_arr[0] if len(v_neg_arr.shape) == 2 else v_neg_arr
+    v_skills_processed = v_skills_arr[0] if len(v_skills_arr.shape) == 2 else v_skills_arr
     
-    return v_core_processed, v_neg_processed, parsed_jd
+    return v_core_processed, v_neg_processed, v_skills_processed, parsed_jd
 
 # ==========================================
 # 5. UI LAYOUT (Vertical Spacious Stack)
@@ -449,13 +520,15 @@ st.markdown(
 
 # Initialize Session State for JD embeddings
 if "v_core" not in st.session_state:
-    v_core, v_neg, meta = load_jd_brain()
+    v_core, v_neg, v_skills, meta = load_jd_brain()
     st.session_state["v_core"] = v_core
     st.session_state["v_neg"] = v_neg
+    st.session_state["v_skills"] = v_skills
     st.session_state["meta"] = meta
 
 v_core = st.session_state.get("v_core")
 v_neg = st.session_state.get("v_neg")
+v_skills = st.session_state.get("v_skills")
 meta = st.session_state.get("meta")
 
 # 1. Job Description & Specification section
@@ -496,13 +569,15 @@ with st.container(border=True):
             else:
                 with st.spinner("Processing Job Description (Running Qwen LLM & BGE Embedder)..."):
                     try:
-                        new_v_core, new_v_neg, new_meta = process_custom_jd(jd_text)
+                        new_v_core, new_v_neg, new_v_skills, new_meta = process_custom_jd(jd_text)
                         st.session_state["v_core"] = new_v_core
                         st.session_state["v_neg"] = new_v_neg
+                        st.session_state["v_skills"] = new_v_skills
                         st.session_state["meta"] = new_meta
                         
                         v_core = new_v_core
                         v_neg = new_v_neg
+                        v_skills = new_v_skills
                         meta = new_meta
                         st.success("Successfully parsed custom Job Description and generated semantic features!")
                     except Exception as e:
@@ -615,7 +690,7 @@ if run_btn:
         progress_bar = st.progress(0)
         
     start_time = time.time()
-    results, dropped_hps = score_candidates(candidates_data, v_core, v_neg, meta, embedder, progress_info, progress_bar)
+    results, dropped_hps = score_candidates(candidates_data, v_core, v_neg, v_skills, meta, embedder, progress_info, progress_bar)
     elapsed = time.time() - start_time
     
     progress_container.empty()

@@ -34,6 +34,7 @@ def is_honeypot(candidate: dict) -> bool:
     skills = candidate.get("skills", [])
     profile = candidate.get("profile", {})
     career = candidate.get("career_history", [])
+    education = candidate.get("education", [])
 
     # ---------------------------------------------------------------
     # Signal 1: Expert/Advanced proficiency with 0 months of use
@@ -50,6 +51,27 @@ def is_honeypot(candidate: dict) -> bool:
 
     if zero_dur_expert_count >= 2:
         return True
+
+    # ---------------------------------------------------------------
+    # Signal 1.5: Impossible Education Timeline
+    # Master's / Ph.D. / PG degrees starting/ending before Bachelor's / UG ends
+    # ---------------------------------------------------------------
+    bachelors = []
+    masters = []
+    for edu in education:
+        deg = edu.get("degree", "").lower()
+        start_yr = edu.get("start_year", 0)
+        end_yr = edu.get("end_year", 0)
+        if start_yr > end_yr:
+            return True
+        if any(x in deg for x in ["bachelor", "b.tech", "b.e.", "b.s", "b.sc", "undergraduate"]):
+            bachelors.append(end_yr)
+        elif any(x in deg for x in ["master", "m.s", "m.tech", "m.e.", "m.sc", "phd", "ph.d", "doctorate"]):
+            masters.append(start_yr)
+            
+    if bachelors and masters:
+        if max(bachelors) > min(masters):
+            return True
 
     # ---------------------------------------------------------------
     # Signal 2: Severe YOE Discrepancy (hard cutoff at 5 years)
@@ -97,17 +119,34 @@ def is_honeypot(candidate: dict) -> bool:
     # ---------------------------------------------------------------
     # Signal 4: Skill Duration Exceeds Total Career Duration
     #
-    # Hard cutoff: if ANY skill exceeds career total by MORE than 24 months
-    # (2 full years) it is physically impossible — even accounting for
+    # Hard cutoff: if ANY skill exceeds career total by MORE than 12 months
+    # (1 full year) it is physically impossible — even accounting for
     # pre-career education and dataset rounding artifacts.
     #
-    # Borderline excess (0-24 months) is handled gracefully by the
+    # Borderline excess (0-12 months) is handled gracefully by the
     # continuous integrity_penalty() function below — no hard eliminate.
     # ---------------------------------------------------------------
     career_total_months = sum(max(0, j.get("duration_months", 0)) for j in career)
+    edu_total_months = 0
+    for edu in education:
+        start_yr = edu.get("start_year", 0)
+        end_yr = edu.get("end_year", 0)
+        if start_yr and end_yr and end_yr >= start_yr:
+            edu_total_months += (end_yr - start_yr) * 12
+
     for s in skills:
         skill_dur = s.get("duration_months", 0)
-        if skill_dur > career_total_months + 24:   # truly impossible (2-year buffer)
+        if skill_dur > career_total_months + edu_total_months + 24:   # truly impossible (2-year buffer + education duration)
+            return True
+
+    # ---------------------------------------------------------------
+    # Signal 4.5: Technology Release Date Check (e.g. LangChain)
+    # LangChain was released in late 2022. Experience cannot exceed 44 months in early 2026.
+    # ---------------------------------------------------------------
+    for s in skills:
+        sname = s.get("name", "").lower()
+        sdur = s.get("duration_months", 0)
+        if "langchain" in sname and sdur > 44:
             return True
 
     # ---------------------------------------------------------------
@@ -193,16 +232,24 @@ def integrity_penalty(candidate: dict) -> float:
     # The is_honeypot() hard cutoff (>24 months) is unchanged — only this
     # soft continuous penalty gains a 12-month minimum floor per skill.
     skill_penalty = 1.0
-    if career_total > 0:
+    edu_total = 0
+    for edu in candidate.get("education", []):
+        start_yr = edu.get("start_year", 0)
+        end_yr = edu.get("end_year", 0)
+        if start_yr and end_yr and end_yr >= start_yr:
+            edu_total += (end_yr - start_yr) * 12
+
+    base_allowed = career_total + edu_total
+    if base_allowed > 0:
         total_excess_ratio = 0.0
         PER_SKILL_NOISE_FLOOR_MONTHS = 12   # ignore overages ≤ 1 year per skill
         for s in skills:
             skill_dur = s.get("duration_months", 0)
-            if skill_dur > career_total:
-                excess = skill_dur - career_total
+            if skill_dur > base_allowed:
+                excess = skill_dur - base_allowed
                 # Subtract the noise floor: only count excess beyond 12 months
                 penalizable_excess = max(0, excess - PER_SKILL_NOISE_FLOOR_MONTHS)
-                total_excess_ratio += penalizable_excess / career_total
+                total_excess_ratio += penalizable_excess / base_allowed
 
         if total_excess_ratio > 0:
             k_skill = 0.5

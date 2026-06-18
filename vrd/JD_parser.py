@@ -119,15 +119,14 @@ Extract the hiring intents into a strict JSON format with exactly these keys:
 7. "negative_tools_or_patterns": Tools, methodologies, or approaches they view as negative.
 8. "metadata_constraints": A dictionary with keys "min_yoe", "max_yoe", "preferred_company_type", "preferred_locations".
 9. "domain_keywords": 5-8 short keywords (1-3 words each) defining the correct professional domain for this role.
-   Example for AI Engineer: ["embeddings", "retrieval", "NLP", "semantic search", "ranking", "vector database"].
-   Example for Marketing Manager: ["campaigns", "SEO", "brand strategy", "content marketing", "conversion"].
+   Example: ["embeddings", "retrieval", "NLP", "semantic search", "ranking", "vector database"].
    These must reflect what a GOOD candidate should know — not what is disqualifying.
 10. "must_have_skills_short": A flat list of up to 10 short skill/technology names extracted from must_have_hard_skills.
     These should be concise identifiers (e.g., ["FAISS", "Pinecone", "sentence-transformers", "Python", "NDCG"]).
 11. "seniority_target": One word indicating the seniority level of the role.
     Must be one of: "junior", "mid", "senior", "staff", "lead", "principal", "director".
-12. "title_family_keywords": A list of 3-5 lowercase single-word nouns or roots (e.g., ["engineer", "developer", "scientist", "programmer", "specialist"] for a Senior AI Engineer, or ["marketer", "marketing", "manager", "strategist"] for a Marketing Manager) that define acceptable job title variations for this role.
-13. "unacceptable_title_keywords": A list of 5-10 lowercase single-word roots (e.g., ["civil", "mechanical", "chemical", "hr", "recruiter", "writer", "editor", "content", "marketing", "sales", "operations", "designer", "artist", "finance", "accounting"] for a Senior AI Engineer, or ["engineer", "developer", "programmer", "scientist", "finance", "legal"] for a Marketing Manager) that are NOT acceptable for this role.
+12. "title_family_keywords": A list of 3-5 lowercase single-word nouns or roots (e.g., ["engineer", "developer", "scientist", "programmer", "specialist"]) that define acceptable job title variations for this role.
+13. "unacceptable_title_keywords": A list of 5-10 lowercase single-word roots (e.g., ["civil", "mechanical", "chemical", "hr", "recruiter", "writer", "sales", "operations", "designer", "finance", "accounting"]) that are NOT acceptable for this role.
 Output ONLY valid JSON. No explanation or markdown.<|im_end|>
 <|im_start|>user
 Job Description:

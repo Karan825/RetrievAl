@@ -21,17 +21,13 @@
     "We move fast and break things, with the caveat that 'things' are usually our internal assumptions, not user-facing systems"
   ],
   "abstract_disqualifiers": [
-    "If you've spent your career in pure research environments (academic labs, research-only roles) without any production deployment",
-    "If your 'AI experience' consists primarily of recent (under 12 months) projects using LangChain to call OpenAI",
-    "If you are a senior engineer who hasn't written production code in the last 18 months because you've moved into 'architecture' or 'tech lead' roles"
-  ],
-  "negative_tools_or_patterns": [
     "Title-chasers",
     "Framework enthusiasts",
-    "People who have only worked at consulting firms (TCS, Infosys, Wipro, Accenture, Cognizant, Capgemini, etc.) in their entire career",
+    "People who have only worked at consulting firms",
     "People whose primary expertise is computer vision, speech, or robotics without significant NLP/IR exposure",
-    "People whose work has been entirely on closed-source proprietary systems for 5+ years without external validation (papers, talks, open-source)"
+    "People whose work has been entirely on closed-source proprietary systems for 5+ years without external validation"
   ],
+  "negative_tools_or_patterns": [],
   "metadata_constraints": {
     "min_yoe": 5,
     "max_yoe": 9,
@@ -67,6 +63,7 @@
     "embeddings",
     "retrieval",
     "ranking",
+    "LLM",
     "fine-tuning",
     "vector database",
     "Python",
@@ -78,65 +75,26 @@
   ],
   "seniority_target": "senior",
   "title_family_keywords": [
-    "AI Engineer",
-    "Senior AI Engineer",
-    "AI Engineer",
-    "Senior AI Engineer"
-  ],
-  "unacceptable_title_keywords": [
     "engineer",
     "developer",
-    "programmer",
     "scientist",
+    "programmer",
+    "specialist"
+  ],
+  "unacceptable_title_keywords": [
+    "civil",
+    "mechanical",
+    "chemical",
+    "hr",
+    "recruiter",
+    "writer",
+    "sales",
+    "operations",
+    "designer",
     "finance",
-    "legal"
+    "accounting"
   ],
   "disqualifier_rules": [
-    {
-      "description": "If you've spent your career in pure research environments (academic labs, research-only roles) without any production deployment",
-      "trigger_skills": [
-        "pure research",
-        "academic labs",
-        "research-only roles",
-        "production deployment"
-      ],
-      "exception_skills": [
-        "production deployment"
-      ],
-      "company_keywords": []
-    },
-    {
-      "description": "If your 'AI experience' consists primarily of recent (under 12 months) projects using LangChain to call OpenAI",
-      "trigger_skills": [
-        "langchain",
-        "openai"
-      ],
-      "exception_skills": [
-        "nlp",
-        "retrieval",
-        "search",
-        "rag",
-        "embeddings",
-        "llm",
-        "transformers",
-        "natural language processing",
-        "information retrieval"
-      ],
-      "company_keywords": []
-    },
-    {
-      "description": "If you are a senior engineer who hasn't written production code in the last 18 months because you've moved into 'architecture' or 'tech lead' roles",
-      "trigger_skills": [
-        "production code",
-        "architecture",
-        "tech lead"
-      ],
-      "exception_skills": [
-        "architecture",
-        "tech lead"
-      ],
-      "company_keywords": []
-    },
     {
       "description": "Title-chasers",
       "trigger_skills": [],
@@ -150,7 +108,7 @@
       "company_keywords": []
     },
     {
-      "description": "People who have only worked at consulting firms (TCS, Infosys, Wipro, Accenture, Cognizant, Capgemini, etc.) in their entire career",
+      "description": "People who have only worked at consulting firms",
       "trigger_skills": [],
       "exception_skills": [],
       "company_keywords": [
@@ -194,25 +152,16 @@
       "company_keywords": []
     },
     {
-      "description": "People whose work has been entirely on closed-source proprietary systems for 5+ years without external validation (papers, talks, open-source)",
+      "description": "People whose work has been entirely on closed-source proprietary systems for 5+ years without external validation",
       "trigger_skills": [
         "closed-source",
         "proprietary",
-        "system",
-        "papers",
-        "talks",
-        "open-source"
+        "unvalidated"
       ],
       "exception_skills": [
-        "nlp",
-        "retrieval",
-        "search",
-        "rag",
-        "embeddings",
-        "llm",
-        "transformers",
-        "natural language processing",
-        "information retrieval"
+        "open-source",
+        "validated",
+        "public"
       ],
       "company_keywords": []
     }
