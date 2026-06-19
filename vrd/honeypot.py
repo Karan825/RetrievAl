@@ -62,12 +62,14 @@ def is_honeypot(candidate: dict) -> bool:
         deg = edu.get("degree", "").lower()
         start_yr = edu.get("start_year", 0)
         end_yr = edu.get("end_year", 0)
-        if start_yr > end_yr:
+        if start_yr > 0 and end_yr > 0 and start_yr > end_yr:
             return True
         if any(x in deg for x in ["bachelor", "b.tech", "b.e.", "b.s", "b.sc", "undergraduate"]):
-            bachelors.append(end_yr)
+            if end_yr > 0:
+                bachelors.append(end_yr)
         elif any(x in deg for x in ["master", "m.s", "m.tech", "m.e.", "m.sc", "phd", "ph.d", "doctorate"]):
-            masters.append(start_yr)
+            if start_yr > 0:
+                masters.append(start_yr)
             
     if bachelors and masters:
         if max(bachelors) > min(masters):

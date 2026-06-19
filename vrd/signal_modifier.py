@@ -18,20 +18,20 @@ Signals Implemented (20 total):
     6.  Skill assessment scores multiplier
     7.  Interview completion rate multiplier
     8.  Profile completeness multiplier
-    9.  Offer acceptance rate multiplier      [NEW]
-    10. Market demand (saved + search)        [NEW]
-    11. Response time multiplier              [NEW]
-    12. Trust signals (email/phone/linkedin)  [NEW]
-    13. Application activity multiplier       [NEW]
+    9.  Offer acceptance rate multiplier      
+    10. Market demand (saved + search)        
+    11. Response time multiplier              
+    12. Trust signals (email/phone/linkedin)  
+    13. Application activity multiplier       
 
   JD-Adaptive (driven by jd_metadata.json):
     14. Location & relocation match           (preferred_locations)
     15. Title alignment (semantic)            (target_job_title)
     16. Company type match (current job)      (preferred_company_type)
-    17. Career history industry penalty       [NEW] (full career, preferred_company_type)
-    18. Education tier × JD technical depth  [NEW] (must_have_hard_skills count)
-    19. Career trajectory × seniority target  [NEW] (seniority_target from meta)
-    20. Disqualifier penalty                  [NEW] (abstract_disqualifiers, per-item scoring)
+    17. Career history industry penalty       (full career, preferred_company_type)
+    18. Education tier × JD technical depth   (must_have_hard_skills count)
+    19. Career trajectory × seniority target  (seniority_target from meta)
+    20. Disqualifier penalty                  (abstract_disqualifiers, per-item scoring)
 """
 
 import datetime
@@ -130,7 +130,7 @@ def _interview_reliability_multiplier(completion_rate: float) -> float:
 
 def _offer_acceptance_multiplier(rate: float) -> float:
     """
-    [NEW] Candidates who regularly accept offers reduce hiring friction.
+    Candidates who regularly accept offers reduce hiring friction.
     Rate == -1 means no offer history — treated as neutral.
     """
     if rate == -1:
@@ -146,7 +146,7 @@ def _offer_acceptance_multiplier(rate: float) -> float:
 
 def _market_demand_multiplier(saved_30d: int, search_appearances_30d: int) -> float:
     """
-    [NEW] saved_by_recruiters_30d + search_appearance_30d = proxy for market demand.
+    saved_by_recruiters_30d + search_appearance_30d = proxy for market demand.
     High demand signals the candidate is competitive and quality-validated by peers.
     """
     demand_score = (saved_30d * 3) + (search_appearances_30d * 0.4)
@@ -161,7 +161,7 @@ def _market_demand_multiplier(saved_30d: int, search_appearances_30d: int) -> fl
 
 def _response_time_multiplier(avg_hours: float) -> float:
     """
-    [NEW] Fast responders reduce time-to-hire significantly.
+    Fast responders reduce time-to-hire significantly.
     Complements response-rate; someone who responds 60% of the time in 2 hours
     is more useful than 60% of the time in 6 days.
     """
@@ -182,7 +182,7 @@ def _trust_signals_multiplier(
     linkedin_connected: bool
 ) -> float:
     """
-    [NEW] Platform-verified identity reduces ghost/fraud risk.
+    Platform-verified identity reduces ghost/fraud risk.
     All three verified = highest trust.
     """
     score = sum([bool(verified_email), bool(verified_phone), bool(linkedin_connected)])
@@ -197,12 +197,12 @@ def _trust_signals_multiplier(
 
 def _applications_activity_multiplier(apps_30d: int) -> float:
     """
-    [NEW] Active job applications signal availability/motivation.
+    Active job applications signal availability/motivation.
     But too many = unfocused spray-and-pray job seeker.
     """
     if 1 <= apps_30d <= 5:
         return 1.04   # active but targeted
-    if 6 <= apps_30d <= 12:
+    if 6 <= apps_30d <= 15:
         return 1.00   # active
     if apps_30d > 15:
         return 0.95   # spray-and-pray
@@ -478,11 +478,18 @@ def _company_type_multiplier(
 
     v_pref = _get_cached_embedding(preferred_company_type, embedder)
     v_cand = _get_cached_embedding(cand_industry, embedder)
-    sim = float(np.dot(v_pref, v_cand))
+    sim_pref = float(np.dot(v_pref, v_cand))
 
-    if sim >= 0.65:
+    # Dual-axis proxy check to protect companies like Netflix (Media) and Amazon (Retail)
+    TECH_PRODUCT_PROXY = "technology software internet startup product"
+    v_tech = _get_cached_embedding(TECH_PRODUCT_PROXY, embedder)
+    sim_tech = float(np.dot(v_tech, v_cand))
+    
+    sim = max(sim_pref, sim_tech)
+
+    if sim >= 0.55:
         return 1.05
-    if sim < 0.40:
+    if sim < 0.35:
         return 0.85
     return 1.0
 
@@ -493,11 +500,11 @@ def _career_industry_penalty(
     embedder
 ) -> float:
     """
-    [NEW] Check ALL career history jobs (not just current) against the JD's
+    Check ALL career history jobs (not just current) against the JD's
     preferred company type. Penalizes candidates whose majority career has been
     in misaligned industries (e.g., 70% IT Services consulting for a product-company JD).
 
-    Fully driven by preferred_company_type from jd_metadata.json — zero hardcoding.
+    Fully driven by preferred_company_type from jd_metadata.json.
     Works for any role/industry combination.
     """
     if not preferred_company_type or not embedder:
@@ -509,10 +516,6 @@ def _career_industry_penalty(
 
     v_pref = _get_cached_embedding(preferred_company_type, embedder)
 
-    # [FIX] Second similarity axis: "technology software internet product" is a
-    # universal proxy for product-type companies regardless of industry label.
-    # This prevents Netflix ("Media"), Apple ("Consumer Electronics"), Amazon
-    # ("E-commerce") from being misclassified as misaligned with a
     # "product company" JD. Both axes must score low to count as misaligned.
     TECH_PRODUCT_PROXY = "technology software internet startup product"
     v_tech = _get_cached_embedding(TECH_PRODUCT_PROXY, embedder)
@@ -565,11 +568,10 @@ def _company_name_industry_signal(
     embedder
 ) -> float:
     """
-    [NEW] Company name semantic signal vs JD preferred company type.
+    Company name semantic signal vs JD preferred company type.
 
     Embeds the candidate's current company name and compares its cosine
-    similarity to the JD's preferred_company_type string.  No hardcoded
-    firm lists — the embedding space carries the signal.
+    similarity to the JD's preferred_company_type string.
 
     JD-agnostic: preferred_company_type comes from jd_metadata.json.
       - "product company" JD : "Netflix" → high sim → bonus.
@@ -581,14 +583,31 @@ def _company_name_industry_signal(
     if not company_name or not embedder or not preferred_company_type:
         return 1.0
 
-    # [HACKATHON SPEED FIX] Bypassing dense embeddings for company names to drop runtime under 5 minutes.
-    # We will rely purely on the 'industry' field embedding instead, which has vastly fewer unique values.
+    v_comp = _get_cached_embedding(company_name, embedder)
+    v_pref = _get_cached_embedding(preferred_company_type, embedder)
+
+    if v_comp is None or v_pref is None:
+        return 1.0
+
+    sim = float(np.dot(v_comp, v_pref))
+
+    # Also check tech product company proxy to match _company_type_multiplier behavior
+    TECH_PRODUCT_PROXY = "technology software internet startup product"
+    v_tech = _get_cached_embedding(TECH_PRODUCT_PROXY, embedder)
+    if v_tech is not None:
+        sim_tech = float(np.dot(v_comp, v_tech))
+        sim = max(sim, sim_tech)
+
+    if sim >= 0.55:
+        return 1.05
+    if sim < 0.35:
+        return 0.88
     return 1.0
 
 
 def _education_multiplier(candidate: dict, technical_depth: float = 0.5) -> float:
     """
-    [NEW] Score education tier weighted by JD technical depth.
+    Score education tier weighted by JD technical depth.
 
     technical_depth: 0.0–1.0, derived from len(must_have_hard_skills) / 8.
       - High depth (AI, quant, hardware): tier_1 STEM matters significantly.
@@ -669,7 +688,7 @@ def _get_seniority_level(title: str) -> int:
 
 def _career_trajectory_multiplier(candidate: dict, seniority_target: str) -> float:
     """
-    [NEW] Check if the candidate's career trajectory aligns with the JD seniority target.
+    Check if the candidate's career trajectory aligns with the JD seniority target.
 
     seniority_target: extracted by Qwen from any JD via parse_jd().
     No hardcoded role names. Works for any role level.

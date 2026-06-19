@@ -56,7 +56,7 @@ def safe_llm_call(llm, prompt, max_tokens=1500, stop="<|im_end|>", temperature=0
 
 
 # ==========================================
-# 2. PARSE THE JD (100% Generalized)
+# 2. PARSE THE JD 
 # ==========================================
 def extract_single_rule(llm, item_text):
     prompt = f"""<|im_start|>system
@@ -140,6 +140,17 @@ Job Description:
         raw_text = response['choices'][0]['text'].strip()
         cleaned_text = raw_text.replace("```json", "").replace("```", "").strip()
         result = json.loads(cleaned_text)
+        # Filter out hallucinated open-source negative patterns
+        if "negative_tools_or_patterns" in result:
+            result["negative_tools_or_patterns"] = [
+                p for p in result["negative_tools_or_patterns"]
+                if "open-source" not in p.lower() and "open source" not in p.lower()
+            ]
+        if "abstract_disqualifiers" in result:
+            result["abstract_disqualifiers"] = [
+                d for d in result["abstract_disqualifiers"]
+                if "open-source" not in d.lower() and "open source" not in d.lower()
+            ]
 
         # Ensure required keys always exist
         if "company" not in result:
